@@ -64,8 +64,10 @@ contract Collection is Ownable, ERC721, IERC2981 {
   // token transfer
   function _beforeTokenTransfer(address from, address to, uint256 tokenId) override internal {
     try engine.beforeTokenTransfer(this, from, to, tokenId, tokenData[tokenId]) {
+      return;
     } catch {
       // engine reverted, but we don't want to block the transfer
+      return;
     }
   }
 
