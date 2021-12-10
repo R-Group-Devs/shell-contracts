@@ -5,3 +5,4 @@ coverage.json
 typechain
 cache
 artifacts
+typechain-types
