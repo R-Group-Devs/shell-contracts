@@ -35,7 +35,7 @@ contract Collection is Ownable, ERC721, IERC2981 {
     );
 
     // token id serial number
-    uint256 public nextTokenId;
+    uint256 public nextTokenId = 1;
 
     // owner-writeable storage, token id => key => value
     mapping(uint256 => mapping(string => string)) public ownerStrings;
@@ -97,7 +97,7 @@ contract Collection is Ownable, ERC721, IERC2981 {
 
     // mint a new token. Can only be called by the currently installed engine
     function mint(address to) external onlyEngine returns (uint256) {
-        uint256 tokenId = ++nextTokenId;
+        uint256 tokenId = nextTokenId++;
         _mint(to, tokenId);
         return tokenId;
     }
