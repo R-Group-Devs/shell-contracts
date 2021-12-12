@@ -6,6 +6,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IERC2981.sol";
 import "./IEngine.sol";
 
+struct StringStorage {
+    string key;
+    string value;
+}
+
+struct Uint256Storage {
+    string key;
+    uint256 value;
+}
+
 contract Collection is Ownable, ERC721, IERC2981 {
     IEngine public engine;
 
@@ -26,6 +36,20 @@ contract Collection is Ownable, ERC721, IERC2981 {
         string indexed value
     );
 
+    // token owner has updated a stored uint256
+    event OwnerUint256Set(
+        uint256 indexed tokenId,
+        string indexed key,
+        uint256 indexed value
+    );
+
+    // engine has updated a stored uint256
+    event EngineUint256Set(
+        uint256 indexed tokenId,
+        string indexed key,
+        uint256 indexed value
+    );
+
     // an emit proxied from the installed engine
     event EngineBroadcast(
         string indexed topic,
@@ -38,10 +62,12 @@ contract Collection is Ownable, ERC721, IERC2981 {
     uint256 public nextTokenId = 1;
 
     // owner-writeable storage, token id => key => value
-    mapping(uint256 => mapping(string => string)) public ownerStrings;
+    mapping(uint256 => mapping(string => string)) public ownerString;
+    mapping(uint256 => mapping(string => uint256)) public ownerUint256;
 
     // engine-writeable storage, token id => key => value
-    mapping(uint256 => mapping(string => string)) public engineStrings;
+    mapping(uint256 => mapping(string => string)) public engineString;
+    mapping(uint256 => mapping(string => uint256)) public engineUint256;
 
     constructor(
         string memory name,
@@ -67,7 +93,7 @@ contract Collection is Ownable, ERC721, IERC2981 {
         string calldata value
     ) external {
         require(ownerOf(tokenId) == msg.sender, "not token owner");
-        ownerStrings[tokenId][key] = value;
+        ownerString[tokenId][key] = value;
         emit OwnerStringSet(tokenId, key, value);
     }
 
@@ -76,8 +102,27 @@ contract Collection is Ownable, ERC721, IERC2981 {
         string calldata key,
         string calldata value
     ) external onlyEngine {
-        engineStrings[tokenId][key] = value;
+        engineString[tokenId][key] = value;
         emit EngineStringSet(tokenId, key, value);
+    }
+
+    function writeOwnerUint256(
+        uint256 tokenId,
+        string calldata key,
+        uint256 value
+    ) external {
+        require(ownerOf(tokenId) == msg.sender, "not token owner");
+        ownerUint256[tokenId][key] = value;
+        emit OwnerUint256Set(tokenId, key, value);
+    }
+
+    function writeEngineString(
+        uint256 tokenId,
+        string calldata key,
+        uint256 value
+    ) external onlyEngine {
+        engineUint256[tokenId][key] = value;
+        emit EngineUint256Set(tokenId, key, value);
     }
 
     // swap out the current engine. Can only be called by owner
