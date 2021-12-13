@@ -75,21 +75,21 @@ interface ICollection {
     // Collection owner (admin) functionaltiy
     // ---
 
-    // Hot swap the collection's engine. Only callable by engine
+    // Hot swap the collection's engine. Only callable by contract owner
     function installEngine(IEngine engine_) external;
 
     // ---
-    // Owner functionality
+    // NFT Owner functionality
     // ---
 
-    // Write string data to owner storage. Only callable by owner
+    // Write string data to owner storage. Only callable by nft owner
     function writeOwnerString(
         uint256 tokenId,
         string calldata key,
         string calldata value
     ) external;
 
-    // Write uint256 data to owner storage. Only callable by owner
+    // Write uint256 data to owner storage. Only callable by nft owner
     function writeOwnerUint256(
         uint256 tokenId,
         string calldata key,

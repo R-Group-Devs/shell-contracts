@@ -58,7 +58,7 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
     }
 
     // ---
-    // Owner functionality
+    // NFT Owner functionality
     // ---
 
     function writeOwnerString(
@@ -132,13 +132,6 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
 
         // write framework provided immutable data
 
-        if (options.storeMintedBy) {
-            _writeMintDataUint256(
-                tokenId,
-                "$mintedBy",
-                uint256(uint160(msg.sender))
-            );
-        }
         if (options.storeEngine) {
             _writeMintDataUint256(
                 tokenId,
