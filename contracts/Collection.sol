@@ -157,6 +157,7 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
             _writeMintDataUint256(tokenId, "$mintedTo", uint256(uint160(to)));
         }
         if (options.storeTimestamp) {
+             // solhint-disable-next-line not-rely-on-time
             _writeMintDataUint256(tokenId, "$timestamp", block.timestamp);
         }
         if (options.storeBlockNumber) {
