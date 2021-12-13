@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IERC2981.sol";
 import "./IEngine.sol";
 import "./ICollection.sol";
 
@@ -45,7 +45,7 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
     }
 
     // ---
-    // Owner (admin) functionaltiy
+    // Collection owner (admin) functionaltiy
     // ---
 
     function installEngine(IEngine engine_) external override onlyOwner {
