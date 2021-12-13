@@ -71,15 +71,19 @@ interface ICollection {
         uint256 indexed value
     );
 
+    // ---
+    // Collection owner (admin) functionaltiy
+    // ---
+
+    // Hot swap the collection's engine. Only callable by engine
+    function installEngine(IEngine engine_) external;
+
+    // ---
+    // Owner functionality
+    // ---
+
     // Write string data to owner storage. Only callable by owner
     function writeOwnerString(
-        uint256 tokenId,
-        string calldata key,
-        string calldata value
-    ) external;
-
-    // Write string data to engine storage. Only callable by engine
-    function writeEngineString(
         uint256 tokenId,
         string calldata key,
         string calldata value
@@ -92,15 +96,23 @@ interface ICollection {
         uint256 value
     ) external;
 
+    // ---
+    // Engine framework
+    // ---
+
+    // Write string data to engine storage. Only callable by engine
+    function writeEngineString(
+        uint256 tokenId,
+        string calldata key,
+        string calldata value
+    ) external;
+
     // Write uint256 data to engine storage. Only callable by engine
     function writeEngineUint256(
         uint256 tokenId,
         string calldata key,
         uint256 value
     ) external;
-
-    // Hot swap the collection's engine. Only callable by engine
-    function installEngine(IEngine engine_) external;
 
     // Mint a new token. Only callable by engine
     function mint(address to, MintOptions calldata options)
