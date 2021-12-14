@@ -41,7 +41,7 @@ Copy `.env.example` to `.env` and override the default values before deploying.
 Deploy the contract:
 
 ```
-yarn deploy --network ropsten
+yarn deploy --network rinkeby
 ```
 
 This will output the deployed contract address in the console.
@@ -51,7 +51,7 @@ This will output the deployed contract address in the console.
 Verify on Etherscan, using the contract address from the previous step.
 
 ```
-yarn verify --network ropsten $CONTRACT_ADDRESS
+yarn verify --network rinkeby $CONTRACT_ADDRESS
 ```
 
 Verification may fail if run too quickly after contract deployment.
@@ -72,4 +72,12 @@ If you are verifying for the `fantom` network, set the `FANTOM` env var:
 
 ```
 FANTOM=1 yarn verify --network fantom $CONTRACT_ADDRESS
+```
+
+### Test Fixtures
+
+To deploy test fixtures and contracts (can help with testing):
+
+```
+yarn deploy:fixtures --network rinkeby
 ```

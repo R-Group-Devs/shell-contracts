@@ -11,6 +11,7 @@
     "clean": "hardhat clean && rm -rf ./cache ./coverage",
     "build": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts",
+    "deploy:fixtures": "hardhat run scripts/deploy-fixtures.ts",
     "verify": "hardhat verify"
   },
   "dependencies": {
