@@ -14,7 +14,11 @@ contract MockEngine is IEngine {
         override
         returns (string memory)
     {
-        string memory ipfsHash = collection.mintDataString(tokenId, "ipfsHash");
+        string memory ipfsHash = collection.readString(
+            StorageLocation.MINT_DATA,
+            tokenId,
+            "ipfsHash"
+        );
         return string(abi.encodePacked("ipfs://ipfs/", ipfsHash));
     }
 
@@ -23,9 +27,11 @@ contract MockEngine is IEngine {
         uint256,
         uint256 salePrice
     ) external view override returns (address receiver, uint256 royaltyAmount) {
-        uint256 bps = collection.globalEngineUint256("royaltyBps");
+        uint256 bps = collection.readInt(StorageLocation.ENGINE, "royaltyBps");
         receiver = address(
-            uint160(collection.globalEngineUint256("royaltyReceiver"))
+            uint160(
+                collection.readInt(StorageLocation.ENGINE, "royaltyReceiver")
+            )
         );
         royaltyAmount = (salePrice * bps) / 10000;
     }
@@ -44,7 +50,7 @@ contract MockEngine is IEngine {
         returns (uint256)
     {
         StringStorage[] memory stringData = new StringStorage[](1);
-        Uint256Storage[] memory uint256Data = new Uint256Storage[](0);
+        IntStorage[] memory intData = new IntStorage[](0);
 
         stringData[0] = StringStorage({key: "ipfsHash", value: ipfsHash});
 
@@ -57,7 +63,7 @@ contract MockEngine is IEngine {
                 storeTimestamp: false,
                 storeBlockNumber: false,
                 stringData: stringData,
-                uint256Data: uint256Data
+                intData: intData
             })
         );
 

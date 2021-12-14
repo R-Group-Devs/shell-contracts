@@ -1,6 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import {
   Collection,
@@ -8,9 +7,6 @@ import {
   Collection__factory,
   MockEngine,
 } from "../typechain";
-
-const { AddressZero } = ethers.constants;
-const { parseUnits } = ethers.utils;
 
 describe("HyperVIBES", function () {
   // ---
