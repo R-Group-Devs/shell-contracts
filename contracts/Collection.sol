@@ -22,16 +22,22 @@ contract Collection is
     uint256 public nextTokenId = 1;
 
     // Owner-writeable storage, token id => key => value
-    mapping(uint256 => mapping(string => string)) public ownerString;
-    mapping(uint256 => mapping(string => uint256)) public ownerUint256;
+    mapping(uint256 => mapping(string => string)) public override ownerString;
+    mapping(uint256 => mapping(string => uint256)) public override ownerUint256;
 
     // Engine-writeable storage, token id => key => value
-    mapping(uint256 => mapping(string => string)) public engineString;
-    mapping(uint256 => mapping(string => uint256)) public engineUint256;
+    mapping(uint256 => mapping(string => string)) public override engineString;
+    mapping(uint256 => mapping(string => uint256))
+        public
+        override engineUint256;
 
     // Only writeable during minting
-    mapping(uint256 => mapping(string => string)) public mintDataString;
-    mapping(uint256 => mapping(string => uint256)) public mintDataUint256;
+    mapping(uint256 => mapping(string => string))
+        public
+        override mintDataString;
+    mapping(uint256 => mapping(string => uint256))
+        public
+        override mintDataUint256;
 
     function initialize(
         string calldata name,
@@ -104,6 +110,40 @@ contract Collection is
     // ---
     // Engine framework
     // ---
+
+    function globalEngineString(string calldata key)
+        external
+        view
+        override
+        returns (string memory)
+    {
+        return engineString[0][key];
+    }
+
+    function globalEngineUint256(string calldata key)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return engineUint256[0][key];
+    }
+
+    function writeGlobalEngineString(string calldata key, string calldata value)
+        external
+        override
+        onlyEngine
+    {
+        engineString[0][key] = value;
+    }
+
+    function writeGlobalEngineUint256(string calldata key, uint256 value)
+        external
+        override
+        onlyEngine
+    {
+        engineUint256[0][key] = value;
+    }
 
     function writeEngineString(
         uint256 tokenId,
@@ -210,7 +250,7 @@ contract Collection is
         override
         returns (string memory)
     {
-        return engine.getTokenURI(IERC721(address(this)), tokenId);
+        return engine.getTokenURI(this, tokenId);
     }
 
     function royaltyInfo(uint256 tokenId, uint256 salePrice)
@@ -219,8 +259,7 @@ contract Collection is
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return
-            engine.getRoyaltyInfo(IERC721(address(this)), tokenId, salePrice);
+        return engine.getRoyaltyInfo(this, tokenId, salePrice);
     }
 
     // ---
@@ -249,14 +288,7 @@ contract Collection is
         address to,
         uint256 tokenId
     ) internal override {
-        try
-            engine.beforeTokenTransfer(
-                IERC721(address(this)),
-                from,
-                to,
-                tokenId
-            )
-        {
+        try engine.beforeTokenTransfer(this, from, to, tokenId) {
             return;
         } catch {
             // engine reverted, but we don't want to block the transfer
