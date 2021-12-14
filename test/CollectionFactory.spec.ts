@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import {
   Collection,
@@ -55,6 +56,11 @@ describe("HyperVIBES", function () {
       const collection = await createCollection();
       expect(await collection.name()).to.equal("Test");
       expect(await collection.symbol()).to.equal("TEST");
+    });
+    it("should delegate tokenURI resolution to engine", async () => {
+      const collection = await createCollection();
+      await mockEngine.mint(collection.address, "Qhash");
+      expect(await collection.tokenURI("1")).to.equal("ipfs://ipfs/Qhash");
     });
   });
 });

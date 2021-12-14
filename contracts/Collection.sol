@@ -19,7 +19,7 @@ contract Collection is
     IEngine public engine;
 
     // token id serial number
-    uint256 public nextTokenId = 1;
+    uint256 public nextTokenId;
 
     // Owner-writeable storage, token id => key => value
     mapping(uint256 => mapping(string => string)) public override ownerString;
@@ -56,6 +56,7 @@ contract Collection is
 
         _transferOwnership(owner);
         _installEngine(engine_);
+        nextTokenId = 1;
     }
 
     modifier onlyEngine() {
@@ -175,6 +176,7 @@ contract Collection is
         // write engine-provided immutable data
 
         for (uint256 i = 0; i < options.stringData.length; i++) {
+            require(bytes(options.stringData[i].key)[0] != "$", "invalid key");
             _writeMintDataString(
                 tokenId,
                 options.stringData[i].key,
@@ -183,6 +185,7 @@ contract Collection is
         }
 
         for (uint256 i = 0; i < options.uint256Data.length; i++) {
+            require(bytes(options.uint256Data[i].key)[0] != "$", "invalid key");
             _writeMintDataUint256(
                 tokenId,
                 options.uint256Data[i].key,
@@ -225,7 +228,6 @@ contract Collection is
         string memory key,
         string memory value
     ) internal {
-        require(bytes(key)[0] != "$", "invalid key");
         mintDataString[tokenId][key] = value;
         emit MintDataStringSet(tokenId, key, value);
     }
@@ -235,7 +237,6 @@ contract Collection is
         string memory key,
         uint256 value
     ) internal {
-        require(bytes(key)[0] != "$", "invalid key");
         mintDataUint256[tokenId][key] = value;
         emit MintDataUint256Set(tokenId, key, value);
     }
