@@ -52,8 +52,8 @@ contract MockEngine is IEngine {
             msg.sender,
             MintOptions({
                 storeEngine: false,
-                storeMintedTo: true,
-                storeMintedBy: true,
+                storeMintedTo: false,
+                storeMintedBy: false,
                 storeTimestamp: false,
                 storeBlockNumber: false,
                 stringData: stringData,
