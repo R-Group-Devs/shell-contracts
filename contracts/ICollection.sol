@@ -11,7 +11,19 @@ struct MintOptions {
     bool storeTimestamp;
     bool storeBlockNumber;
     StringStorage[] stringData;
-    Uint256Storage[] uint256Data;
+    IntStorage[] intData;
+}
+
+// Each storage location has its own access constraints
+enum StorageLocation {
+    // can only be set by token owner at any time, mutable
+    OWNER,
+    // is set by the engine at any time, mutable
+    ENGINE,
+    // is set by engine during minting, immutable
+    MINT_DATA,
+    // is set by the framework during minting or collection creation, immutable
+    FRAMEWORK
 }
 
 struct StringStorage {
@@ -19,7 +31,7 @@ struct StringStorage {
     string value;
 }
 
-struct Uint256Storage {
+struct IntStorage {
     string key;
     uint256 value;
 }
@@ -29,152 +41,113 @@ interface ICollection {
     // A new engine was installed
     event EngineInstalled(IEngine indexed engine);
 
-    // Immutable data set during minting
-    event MintDataStringSet(
-        uint256 indexed tokenId,
+    // A string was stored in the collection
+    event CollectionStringUpdated(
+        StorageLocation indexed location,
         string indexed key,
-        string indexed value
+        string value
     );
 
-    // Token owner has updated a stored string
-    event OwnerStringSet(
+    // A string was stored in a token
+    event TokenStringUpdated(
+        StorageLocation indexed location,
         uint256 indexed tokenId,
         string indexed key,
-        string indexed value
+        string value
     );
 
-    // Engine has updated a stored string
-    event EngineStringSet(
+    // A uint256 was stored in the collection
+    event CollectionIntUpdated(
+        StorageLocation indexed location,
+        string indexed key,
+        uint256 value
+    );
+
+    // A uint256 was stored in a token
+    event TokenIntUpdated(
+        StorageLocation indexed location,
         uint256 indexed tokenId,
         string indexed key,
-        string indexed value
+        uint256 value
     );
-
-    // Engine has updated a global stored string
-    event GlobalEngineStringSet(string indexed key, string indexed value);
-
-    // Immutable data set during mint
-    event MintDataUint256Set(
-        uint256 indexed tokenId,
-        string indexed key,
-        uint256 indexed value
-    );
-
-    // Token owner has updated a stored uint256
-    event OwnerUint256Set(
-        uint256 indexed tokenId,
-        string indexed key,
-        uint256 indexed value
-    );
-
-    // Engine has updated a stored uint256
-    event EngineUint256Set(
-        uint256 indexed tokenId,
-        string indexed key,
-        uint256 indexed value
-    );
-
-    // Engine has updated a global stored uint256
-    event GlobalEngineUint256Set(string indexed key, uint256 indexed value);
 
     // ---
     // Collection owner (admin) functionaltiy
     // ---
 
     // Hot swap the collection's engine. Only callable by contract owner
-    function installEngine(IEngine engine_) external;
+    function installEngine(IEngine engine) external;
 
     // ---
-    // NFT Owner functionality
+    // Engine functionality
     // ---
-
-    // Read a string from owner storage
-    function ownerString(uint256 tokenId, string calldata key)
-        external
-        returns (string memory);
-
-    // Read a uint256 from owner storage
-    function ownerUint256(uint256 tokenId, string calldata key)
-        external
-        returns (uint256);
-
-    // Write string data to owner storage. Only callable by nft owner
-    function writeOwnerString(
-        uint256 tokenId,
-        string calldata key,
-        string calldata value
-    ) external;
-
-    // Write uint256 data to owner storage. Only callable by nft owner
-    function writeOwnerUint256(
-        uint256 tokenId,
-        string calldata key,
-        uint256 value
-    ) external;
-
-    // ---
-    // Engine framework
-    // ---
-
-    // Read a string from global engine storage
-    function globalEngineString(string calldata key)
-        external
-        view
-        returns (string memory);
-
-    // Read a uint256 from global engine storage
-    function globalEngineUint256(string calldata key)
-        external
-        view
-        returns (uint256);
-
-    // Read a string from engine storage
-    function engineString(uint256 tokenId, string calldata key)
-        external
-        returns (string memory);
-
-    // Read a uint256 from engine storage
-    function engineUint256(uint256 tokenId, string calldata key)
-        external
-        view
-        returns (uint256);
-
-    // Read a string from mint data
-    function mintDataString(uint256 tokenId, string calldata key)
-        external
-        view
-        returns (string memory);
-
-    // Read a uint256 from mint data
-    function mintDataUint256(uint256 tokenId, string calldata key)
-        external
-        view
-        returns (uint256);
-
-    // Write string data to engine storage. Only callable by engine
-    function writeEngineString(
-        uint256 tokenId,
-        string calldata key,
-        string calldata value
-    ) external;
-
-    // Write uint256 data to engine storage. Only callable by engine
-    function writeEngineUint256(
-        uint256 tokenId,
-        string calldata key,
-        uint256 value
-    ) external;
-
-    // Write string data to global engine storage. Only callable by engine
-    function writeGlobalEngineString(string calldata key, string calldata value)
-        external;
-
-    // Write uint256 data to global engine storage. Only callable by engine
-    function writeGlobalEngineUint256(string calldata key, uint256 value)
-        external;
 
     // Mint a new token. Only callable by engine
     function mint(address to, MintOptions calldata options)
         external
         returns (uint256);
+
+    // ---
+    // Storage writes
+    // ---
+
+    // Write a string to collection storage
+    function writeString(
+        StorageLocation location,
+        string calldata key,
+        string calldata value
+    ) external;
+
+    // Write a string to token storage
+    function writeString(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key,
+        string calldata value
+    ) external;
+
+    // Write a string to collection storage
+    function writeInt(
+        StorageLocation location,
+        string calldata key,
+        uint256 value
+    ) external;
+
+    // Write a string to token storage
+    function writeInt(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key,
+        uint256 value
+    ) external;
+
+    // ---
+    // Storage reads
+    // ---
+
+    // Read a string from collection storage
+    function readString(StorageLocation location, string calldata key)
+        external
+        view
+        returns (string memory);
+
+    // Read a string from token storage
+    function readString(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key
+    ) external view returns (string memory);
+
+    // Read a uint256 from collection storage
+    function readInt(StorageLocation location, string calldata key)
+        external
+        view
+        returns (uint256);
+
+    // Read a uint256 from token storage
+    function readInt(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key
+    ) external view returns (uint256);
 }

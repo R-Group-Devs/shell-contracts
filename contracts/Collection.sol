@@ -16,33 +16,21 @@ contract Collection is
     OwnableUpgradeable
 {
     // Currently installed engine
-    IEngine public engine;
+    IEngine public installedEngine;
 
     // token id serial number
     uint256 public nextTokenId;
 
-    // Owner-writeable storage, token id => key => value
-    mapping(uint256 => mapping(string => string)) public override ownerString;
-    mapping(uint256 => mapping(string => uint256)) public override ownerUint256;
+    // all stored strings
+    mapping(bytes32 => string) private _stringStorage;
 
-    // Engine-writeable storage, token id => key => value
-    mapping(uint256 => mapping(string => string)) public override engineString;
-    mapping(uint256 => mapping(string => uint256))
-        public
-        override engineUint256;
-
-    // Only writeable during minting
-    mapping(uint256 => mapping(string => string))
-        public
-        override mintDataString;
-    mapping(uint256 => mapping(string => uint256))
-        public
-        override mintDataUint256;
+    // all stored ints
+    mapping(bytes32 => uint256) private _intStorage;
 
     function initialize(
         string calldata name,
         string calldata symbol,
-        IEngine engine_,
+        IEngine engine,
         address owner
     ) external initializer {
         // also inits Context, ERC165
@@ -55,15 +43,12 @@ contract Collection is
         // function argument, so no need to assign it twice
 
         _transferOwnership(owner);
-        _installEngine(engine_);
+        _installEngine(engine);
         nextTokenId = 1;
     }
 
     modifier onlyEngine() {
-        require(
-            _msgSender() == address(engine),
-            "caller must be installed engine"
-        );
+        require(_msgSender() == address(installedEngine), "shell: not engine");
         _;
     }
 
@@ -71,102 +56,25 @@ contract Collection is
     // Collection owner (admin) functionaltiy
     // ---
 
-    function installEngine(IEngine engine_) external override onlyOwner {
-        _installEngine(engine_);
+    function installEngine(IEngine engine) external onlyOwner {
+        _installEngine(engine);
     }
 
-    function _installEngine(IEngine engine_) internal {
+    function _installEngine(IEngine engine) internal {
         require(
-            engine_.supportsInterface(type(IEngine).interfaceId),
-            "IEngine not supported"
+            engine.supportsInterface(type(IEngine).interfaceId),
+            "shell: invalid engine"
         );
-        engine = engine_;
-        emit EngineInstalled(engine_);
+        installedEngine = engine;
+        emit EngineInstalled(engine);
     }
 
     // ---
-    // NFT Owner functionality
+    // Engine functionality
     // ---
-
-    function writeOwnerString(
-        uint256 tokenId,
-        string calldata key,
-        string calldata value
-    ) external override {
-        require(ownerOf(tokenId) == msg.sender, "not token owner");
-        ownerString[tokenId][key] = value;
-        emit OwnerStringSet(tokenId, key, value);
-    }
-
-    function writeOwnerUint256(
-        uint256 tokenId,
-        string calldata key,
-        uint256 value
-    ) external override {
-        require(ownerOf(tokenId) == msg.sender, "not token owner");
-        ownerUint256[tokenId][key] = value;
-        emit OwnerUint256Set(tokenId, key, value);
-    }
-
-    // ---
-    // Engine framework
-    // ---
-
-    function globalEngineString(string calldata key)
-        external
-        view
-        override
-        returns (string memory)
-    {
-        return engineString[0][key];
-    }
-
-    function globalEngineUint256(string calldata key)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return engineUint256[0][key];
-    }
-
-    function writeGlobalEngineString(string calldata key, string calldata value)
-        external
-        override
-        onlyEngine
-    {
-        engineString[0][key] = value;
-    }
-
-    function writeGlobalEngineUint256(string calldata key, uint256 value)
-        external
-        override
-        onlyEngine
-    {
-        engineUint256[0][key] = value;
-    }
-
-    function writeEngineString(
-        uint256 tokenId,
-        string calldata key,
-        string calldata value
-    ) external override onlyEngine {
-        engineString[tokenId][key] = value;
-        emit EngineStringSet(tokenId, key, value);
-    }
-
-    function writeEngineUint256(
-        uint256 tokenId,
-        string calldata key,
-        uint256 value
-    ) external override onlyEngine {
-        engineUint256[tokenId][key] = value;
-        emit EngineUint256Set(tokenId, key, value);
-    }
 
     function mint(address to, MintOptions calldata options)
         external
-        override
         onlyEngine
         returns (uint256)
     {
@@ -176,69 +84,187 @@ contract Collection is
         // write engine-provided immutable data
 
         for (uint256 i = 0; i < options.stringData.length; i++) {
-            require(bytes(options.stringData[i].key)[0] != "$", "invalid key");
-            _writeMintDataString(
+            _writeString(
+                StorageLocation.MINT_DATA,
                 tokenId,
                 options.stringData[i].key,
                 options.stringData[i].value
             );
         }
 
-        for (uint256 i = 0; i < options.uint256Data.length; i++) {
-            require(bytes(options.uint256Data[i].key)[0] != "$", "invalid key");
-            _writeMintDataUint256(
+        for (uint256 i = 0; i < options.intData.length; i++) {
+            _writeInt(
+                StorageLocation.MINT_DATA,
                 tokenId,
-                options.uint256Data[i].key,
-                options.uint256Data[i].value
+                options.intData[i].key,
+                options.intData[i].value
             );
-        }
-
-        // write framework provided immutable data
-
-        if (options.storeEngine) {
-            _writeMintDataUint256(
-                tokenId,
-                "$engine",
-                uint256(uint160(address(engine)))
-            );
-        }
-        if (options.storeMintedBy) {
-            _writeMintDataUint256(
-                tokenId,
-                "$mintedBy",
-                uint256(uint160(msg.sender))
-            );
-        }
-        if (options.storeMintedTo) {
-            _writeMintDataUint256(tokenId, "$mintedTo", uint256(uint160(to)));
-        }
-        if (options.storeTimestamp) {
-            // solhint-disable-next-line not-rely-on-time
-            _writeMintDataUint256(tokenId, "$timestamp", block.timestamp);
-        }
-        if (options.storeBlockNumber) {
-            _writeMintDataUint256(tokenId, "$blocknumber", block.number);
         }
 
         return tokenId;
     }
 
-    function _writeMintDataString(
-        uint256 tokenId,
-        string memory key,
-        string memory value
-    ) internal {
-        mintDataString[tokenId][key] = value;
-        emit MintDataStringSet(tokenId, key, value);
+    // ---
+    // Storage write controller
+    // ---
+
+    function writeString(
+        StorageLocation location,
+        string calldata key,
+        string calldata value
+    ) external {
+        _validateWrite(location);
+        _writeString(location, key, value);
     }
 
-    function _writeMintDataUint256(
+    function writeString(
+        StorageLocation location,
         uint256 tokenId,
-        string memory key,
+        string calldata key,
+        string calldata value
+    ) external {
+        _validateWrite(location, tokenId);
+        _writeString(location, tokenId, key, value);
+    }
+
+    function writeInt(
+        StorageLocation location,
+        string calldata key,
+        uint256 value
+    ) external {
+        _validateWrite(location);
+        _writeInt(location, key, value);
+    }
+
+    function writeInt(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key,
+        uint256 value
+    ) external {
+        _validateWrite(location, tokenId);
+        _writeInt(location, tokenId, key, value);
+    }
+
+    function _validateWrite(StorageLocation location) private view {
+        if (location == StorageLocation.ENGINE) {
+            require(
+                _msgSender() == address(installedEngine),
+                "shell: not engine"
+            );
+        } else {
+            revert("shell: invalid write");
+        }
+    }
+
+    function _validateWrite(StorageLocation location, uint256 tokenId)
+        private
+        view
+    {
+        if (location == StorageLocation.OWNER) {
+            require(_msgSender() == ownerOf(tokenId), "shell: not nft owner");
+        } else if (location == StorageLocation.ENGINE) {
+            require(
+                _msgSender() == address(installedEngine),
+                "shell: not engine"
+            );
+        } else {
+            revert("shell: invalid write");
+        }
+    }
+
+    // ---
+    // Storage write implementation
+    // ---
+
+    function _writeString(
+        StorageLocation location,
+        string calldata key,
+        string calldata value
+    ) internal {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
+        _stringStorage[storageKey] = value;
+        emit CollectionStringUpdated(location, key, value);
+    }
+
+    function _writeString(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key,
+        string calldata value
+    ) internal {
+        bytes32 storageKey = keccak256(
+            abi.encodePacked(location, tokenId, key)
+        );
+        _stringStorage[storageKey] = value;
+        emit TokenStringUpdated(location, tokenId, key, value);
+    }
+
+    function _writeInt(
+        StorageLocation location,
+        string calldata key,
         uint256 value
     ) internal {
-        mintDataUint256[tokenId][key] = value;
-        emit MintDataUint256Set(tokenId, key, value);
+        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
+        _intStorage[storageKey] = value;
+        emit CollectionIntUpdated(location, key, value);
+    }
+
+    function _writeInt(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key,
+        uint256 value
+    ) internal {
+        bytes32 storageKey = keccak256(
+            abi.encodePacked(location, tokenId, key)
+        );
+        _intStorage[storageKey] = value;
+        emit TokenIntUpdated(location, tokenId, key, value);
+    }
+
+    // ---
+    // Storage views
+    // ---
+
+    function readString(StorageLocation location, string calldata key)
+        external
+        view
+        returns (string memory)
+    {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
+        return _stringStorage[storageKey];
+    }
+
+    function readString(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key
+    ) external view returns (string memory) {
+        bytes32 storageKey = keccak256(
+            abi.encodePacked(location, tokenId, key)
+        );
+        return _stringStorage[storageKey];
+    }
+
+    function readInt(StorageLocation location, string calldata key)
+        external
+        view
+        returns (uint256)
+    {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
+        return _intStorage[storageKey];
+    }
+
+    function readInt(
+        StorageLocation location,
+        uint256 tokenId,
+        string calldata key
+    ) external view returns (uint256) {
+        bytes32 storageKey = keccak256(
+            abi.encodePacked(location, tokenId, key)
+        );
+        return _intStorage[storageKey];
     }
 
     // ---
@@ -251,16 +277,15 @@ contract Collection is
         override
         returns (string memory)
     {
-        return engine.getTokenURI(this, tokenId);
+        return installedEngine.getTokenURI(this, tokenId);
     }
 
     function royaltyInfo(uint256 tokenId, uint256 salePrice)
         external
         view
-        override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return engine.getRoyaltyInfo(this, tokenId, salePrice);
+        return installedEngine.getRoyaltyInfo(this, tokenId, salePrice);
     }
 
     // ---
@@ -289,7 +314,7 @@ contract Collection is
         address to,
         uint256 tokenId
     ) internal override {
-        try engine.beforeTokenTransfer(this, from, to, tokenId) {
+        try installedEngine.beforeTokenTransfer(this, from, to, tokenId) {
             return;
         } catch {
             // engine reverted, but we don't want to block the transfer
