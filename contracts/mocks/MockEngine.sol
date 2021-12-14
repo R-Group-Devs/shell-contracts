@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../IEngine.sol";
 import "../ICollection.sol";
 
-// SimplE
+// Simple engine with a few conventions:
 contract MockEngine is IEngine {
     string public baseUri;
 
