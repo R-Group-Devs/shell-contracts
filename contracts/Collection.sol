@@ -1,13 +1,20 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IEngine.sol";
 import "./ICollection.sol";
 
-contract Collection is Ownable, ICollection, ERC721, IERC2981 {
+contract Collection is
+    ICollection,
+    IERC2981,
+    Initializable,
+    ERC721Upgradeable,
+    OwnableUpgradeable
+{
     // Currently installed engine
     IEngine public engine;
 
@@ -26,12 +33,21 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
     mapping(uint256 => mapping(string => string)) public mintDataString;
     mapping(uint256 => mapping(string => uint256)) public mintDataUint256;
 
-    constructor(
-        string memory name,
-        string memory symbol,
+    function initialize(
+        string calldata name,
+        string calldata symbol,
         IEngine engine_,
         address owner
-    ) ERC721(name, symbol) {
+    ) external initializer {
+        // also inits Context, ERC165
+        __ERC721_init(name, symbol);
+
+        // purposefully omitting __Ownable_init
+        //
+        // its init chain only has Context (which is inited in the 721 call
+        // above), and for our own init-ing we're setting owner based on the
+        // function argument, so no need to assign it twice
+
         _transferOwnership(owner);
         _installEngine(engine_);
     }
@@ -53,6 +69,7 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
     }
 
     function _installEngine(IEngine engine_) internal {
+        require(engine_.supportsInterface(type(IEngine).interfaceId), "IEngine not supported");
         engine = engine_;
         emit EngineInstalled(engine_);
     }
@@ -150,7 +167,7 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
             _writeMintDataUint256(tokenId, "$mintedTo", uint256(uint160(to)));
         }
         if (options.storeTimestamp) {
-             // solhint-disable-next-line not-rely-on-time
+            // solhint-disable-next-line not-rely-on-time
             _writeMintDataUint256(tokenId, "$timestamp", block.timestamp);
         }
         if (options.storeBlockNumber) {
@@ -190,7 +207,7 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
         override
         returns (string memory)
     {
-        return engine.getTokenURI(this, tokenId);
+        return engine.getTokenURI(IERC721(address(this)), tokenId);
     }
 
     function royaltyInfo(uint256 tokenId, uint256 salePrice)
@@ -199,15 +216,35 @@ contract Collection is Ownable, ICollection, ERC721, IERC2981 {
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return engine.getRoyaltyInfo(this, tokenId, salePrice);
+        return engine.getRoyaltyInfo(IERC721(address(this)), tokenId, salePrice);
     }
+
+    // ---
+    // introspection
+    // ---
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721Upgradeable, IERC165)
+        returns (bool)
+    {
+        return
+            ERC721Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == type(IERC165).interfaceId;
+    }
+
+    // ---
+    // Open Zeppelin ERC721 hook
+    // ---
 
     function _beforeTokenTransfer(
         address from,
         address to,
         uint256 tokenId
     ) internal override {
-        try engine.beforeTokenTransfer(this, from, to, tokenId) {
+        try engine.beforeTokenTransfer(IERC721(address(this)), from, to, tokenId) {
             return;
         } catch {
             // engine reverted, but we don't want to block the transfer

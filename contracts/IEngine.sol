@@ -2,9 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+
 
 // Required interface for framework engines
-interface IEngine {
+interface IEngine is IERC165 {
     // Called by the collection to resolve a response for tokenURI
     function getTokenURI(IERC721 collection, uint256 tokenId)
         external
