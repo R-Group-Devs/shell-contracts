@@ -69,7 +69,10 @@ contract Collection is
     }
 
     function _installEngine(IEngine engine_) internal {
-        require(engine_.supportsInterface(type(IEngine).interfaceId), "IEngine not supported");
+        require(
+            engine_.supportsInterface(type(IEngine).interfaceId),
+            "IEngine not supported"
+        );
         engine = engine_;
         emit EngineInstalled(engine_);
     }
@@ -216,7 +219,8 @@ contract Collection is
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return engine.getRoyaltyInfo(IERC721(address(this)), tokenId, salePrice);
+        return
+            engine.getRoyaltyInfo(IERC721(address(this)), tokenId, salePrice);
     }
 
     // ---
@@ -232,6 +236,7 @@ contract Collection is
     {
         return
             ERC721Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == type(IERC2981).interfaceId ||
             interfaceId == type(IERC165).interfaceId;
     }
 
@@ -244,7 +249,14 @@ contract Collection is
         address to,
         uint256 tokenId
     ) internal override {
-        try engine.beforeTokenTransfer(IERC721(address(this)), from, to, tokenId) {
+        try
+            engine.beforeTokenTransfer(
+                IERC721(address(this)),
+                from,
+                to,
+                tokenId
+            )
+        {
             return;
         } catch {
             // engine reverted, but we don't want to block the transfer
