@@ -97,6 +97,50 @@ contract Collection is
             );
         }
 
+        // write framework immutable data
+
+        if (options.storeEngine) {
+            _writeInt(
+                StorageLocation.FRAMEWORK,
+                tokenId,
+                "engine",
+                uint256(uint160(address(installedEngine)))
+            );
+        }
+        if (options.storeMintedBy) {
+            _writeInt(
+                StorageLocation.FRAMEWORK,
+                tokenId,
+                "mintedBy",
+                uint256(uint160(address(_msgSender())))
+            );
+        }
+        if (options.storeMintedTo) {
+            _writeInt(
+                StorageLocation.FRAMEWORK,
+                tokenId,
+                "mintedTo",
+                uint256(uint160(address(to)))
+            );
+        }
+        if (options.storeTimestamp) {
+            _writeInt(
+                StorageLocation.FRAMEWORK,
+                tokenId,
+                "timestamp",
+                // solhint-disable-next-line not-rely-on-time
+                block.timestamp
+            );
+        }
+        if (options.storeBlockNumber) {
+            _writeInt(
+                StorageLocation.FRAMEWORK,
+                tokenId,
+                "blockNumber",
+                block.number
+            );
+        }
+
         return tokenId;
     }
 
@@ -175,8 +219,8 @@ contract Collection is
 
     function _writeString(
         StorageLocation location,
-        string calldata key,
-        string calldata value
+        string memory key,
+        string memory value
     ) internal {
         bytes32 storageKey = keccak256(abi.encodePacked(location, key));
         _stringStorage[storageKey] = value;
@@ -186,8 +230,8 @@ contract Collection is
     function _writeString(
         StorageLocation location,
         uint256 tokenId,
-        string calldata key,
-        string calldata value
+        string memory key,
+        string memory value
     ) internal {
         bytes32 storageKey = keccak256(
             abi.encodePacked(location, tokenId, key)
@@ -198,7 +242,7 @@ contract Collection is
 
     function _writeInt(
         StorageLocation location,
-        string calldata key,
+        string memory key,
         uint256 value
     ) internal {
         bytes32 storageKey = keccak256(abi.encodePacked(location, key));
@@ -209,7 +253,7 @@ contract Collection is
     function _writeInt(
         StorageLocation location,
         uint256 tokenId,
-        string calldata key,
+        string memory key,
         uint256 value
     ) internal {
         bytes32 storageKey = keccak256(

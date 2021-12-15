@@ -8,7 +8,7 @@ import {
   MockEngine,
 } from "../typechain";
 
-describe("HyperVIBES", function () {
+describe("CollectionFactory", function () {
   // ---
   // fixtures
   // ---
