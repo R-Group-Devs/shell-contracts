@@ -47,11 +47,6 @@ contract Collection is
         nextTokenId = 1;
     }
 
-    modifier onlyEngine() {
-        require(_msgSender() == address(installedEngine), "shell: not engine");
-        _;
-    }
-
     // ---
     // Collection owner (admin) functionaltiy
     // ---
@@ -75,9 +70,10 @@ contract Collection is
 
     function mint(address to, MintOptions calldata options)
         external
-        onlyEngine
         returns (uint256)
     {
+        require(_msgSender() == address(installedEngine), "shell: not engine");
+
         uint256 tokenId = nextTokenId++;
         _mint(to, tokenId);
 
