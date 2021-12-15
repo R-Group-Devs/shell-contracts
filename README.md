@@ -36,7 +36,9 @@ yarn test:coverage
 
 ## Architecture
 
-<img width="791" alt="Screen Shot 2021-12-15 at 12 12 52 AM" src="https://user-images.githubusercontent.com/644088/146133317-9031ef18-92e8-4876-b8dd-d5476bc90718.png">
+<p align="center">
+  <img width="791" alt="Screen Shot 2021-12-15 at 12 12 52 AM" src="https://user-images.githubusercontent.com/644088/146133317-9031ef18-92e8-4876-b8dd-d5476bc90718.png">
+</P>
 
 * A `Factory` contract can deploy ERC-721 `Collection` contracts via OpenZeppelin's `Clone` util
 * The collection owner can, at any time, install an **engine** that implements an `IEngine` interface ([strategy pattern](https://en.wikipedia.org/wiki/Strategy_pattern))
