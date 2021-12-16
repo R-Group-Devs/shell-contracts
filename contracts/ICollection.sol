@@ -78,6 +78,8 @@ interface ICollection {
     // Hot swap the collection's engine. Only callable by contract owner
     function installEngine(IEngine engine) external;
 
+    function installedEngine() external view returns (IEngine);
+
     // ---
     // Engine functionality
     // ---
