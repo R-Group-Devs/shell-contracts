@@ -264,6 +264,77 @@ contract Collection is
     }
 
     // ---
+    // Event publishing
+    // ---
+
+    function publishString(
+        PublishChannel channel,
+        string calldata topic,
+        string calldata value
+    ) external {
+        _validatePublish(channel);
+        emit CollectionStringPublished(channel, topic, value);
+    }
+
+    function publishString(
+        PublishChannel channel,
+        uint256 tokenId,
+        string calldata topic,
+        string calldata value
+    ) external {
+        _validatePublish(channel, tokenId);
+        emit TokenStringPublished(channel, tokenId, topic, value);
+    }
+
+    function publishInt(
+        PublishChannel channel,
+        string calldata topic,
+        uint256 value
+    ) external {
+        _validatePublish(channel);
+        emit CollectionIntPublished(channel, topic, value);
+    }
+
+    function publishInt(
+        PublishChannel channel,
+        uint256 tokenId,
+        string calldata topic,
+        uint256 value
+    ) external {
+        _validatePublish(channel, tokenId);
+        emit TokenIntPublished(channel, tokenId, topic, value);
+    }
+
+    function _validatePublish(PublishChannel channel) private view {
+        if (channel == PublishChannel.PUBLIC) {
+            return;
+        } else if (channel == PublishChannel.OWNER) {
+            require(balanceOf(_msgSender()) > 0, "shell: no owned nfts");
+        } else if (channel == PublishChannel.ENGINE) {
+            require(
+                _msgSender() == address(installedEngine),
+                "shell: not engine"
+            );
+        }
+    }
+
+    function _validatePublish(PublishChannel channel, uint256 tokenId)
+        private
+        view
+    {
+        if (channel == PublishChannel.PUBLIC) {
+            return;
+        } else if (channel == PublishChannel.OWNER) {
+            require(ownerOf(tokenId) == _msgSender(), "shell: not nft owner");
+        } else if (channel == PublishChannel.ENGINE) {
+            require(
+                _msgSender() == address(installedEngine),
+                "shell: not engine"
+            );
+        }
+    }
+
+    // ---
     // Storage views
     // ---
 

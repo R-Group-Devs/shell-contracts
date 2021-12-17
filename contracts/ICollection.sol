@@ -16,14 +16,23 @@ struct MintOptions {
 
 // Each storage location has its own access constraints
 enum StorageLocation {
-    // can only be set by token owner at any time, mutable
+    // set by token owner at any time, mutable
     OWNER,
-    // is set by the engine at any time, mutable
+    // set by the engine at any time, mutable
     ENGINE,
-    // is set by engine during minting, immutable
+    // set by engine during minting, immutable
     MINT_DATA,
-    // is set by the framework during minting or collection creation, immutable
+    // set by the framework during minting or collection creation, immutable
     FRAMEWORK
+}
+
+enum PublishChannel {
+    // events created by anybody
+    PUBLIC,
+    // events created by token owner
+    OWNER,
+    // events created by engine
+    ENGINE
 }
 
 struct StringStorage {
@@ -40,6 +49,10 @@ struct IntStorage {
 interface ICollection {
     // A new engine was installed
     event EngineInstalled(IEngine indexed engine);
+
+    // ---
+    // Storage events
+    // ---
 
     // A string was stored in the collection
     event CollectionStringUpdated(
@@ -72,12 +85,47 @@ interface ICollection {
     );
 
     // ---
+    // Published events
+    // ---
+
+    // A string was stored in the collection
+    event CollectionStringPublished(
+        PublishChannel indexed location,
+        string indexed key,
+        string value
+    );
+
+    // A string was stored in a token
+    event TokenStringPublished(
+        PublishChannel indexed location,
+        uint256 indexed tokenId,
+        string indexed key,
+        string value
+    );
+
+    // A uint256 was stored in the collection
+    event CollectionIntPublished(
+        PublishChannel indexed location,
+        string indexed key,
+        uint256 value
+    );
+
+    // A uint256 was stored in a token
+    event TokenIntPublished(
+        PublishChannel indexed location,
+        uint256 indexed tokenId,
+        string indexed key,
+        uint256 value
+    );
+
+    // ---
     // Collection owner (admin) functionaltiy
     // ---
 
     // Hot swap the collection's engine. Only callable by contract owner
     function installEngine(IEngine engine) external;
 
+    // the currently installed engine for this collection
     function installedEngine() external view returns (IEngine);
 
     // ---
@@ -120,6 +168,40 @@ interface ICollection {
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
+        uint256 value
+    ) external;
+
+    // ---
+    // Event publishing
+    // ---
+
+    // publish a string from the collection
+    function publishString(
+        PublishChannel channel,
+        string calldata topic,
+        string calldata value
+    ) external;
+
+    // publish a string from a specific token
+    function publishString(
+        PublishChannel channel,
+        uint256 tokenId,
+        string calldata topic,
+        string calldata value
+    ) external;
+
+    // publish a uint256 from the collection
+    function publishInt(
+        PublishChannel channel,
+        string calldata topic,
+        uint256 value
+    ) external;
+
+    // publish a uint256 from a specific token
+    function publishInt(
+        PublishChannel channel,
+        uint256 tokenId,
+        string calldata topic,
         uint256 value
     ) external;
 
