@@ -8,6 +8,10 @@ import "../ICollection.sol";
 contract MockEngine is IEngine {
     string public baseUri;
 
+    function name() external pure returns (string memory) {
+        return "MockEngine";
+    }
+
     function getTokenURI(ICollection collection, uint256 tokenId)
         external
         view
