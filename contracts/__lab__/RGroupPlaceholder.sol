@@ -59,13 +59,13 @@ contract RGroupPlaceholder is
         collection.writeString(StorageLocation.ENGINE, tokenId, "bio", bio);
     }
 
-    function _computeName(ICollection nft, uint256)
+    function _computeName(ICollection nft, uint256 tokenId)
         internal
         view
         override
         returns (string memory)
     {
-        string memory name_ = nft.readString(StorageLocation.ENGINE, "name");
+        string memory name_ = nft.readString(StorageLocation.ENGINE, tokenId, "name");
         return string(abi.encodePacked("R Group: ", name_));
     }
 
