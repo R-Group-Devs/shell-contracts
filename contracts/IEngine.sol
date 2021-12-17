@@ -6,6 +6,9 @@ import "./ICollection.sol";
 
 // Required interface for framework engines
 interface IEngine is IERC165 {
+    // display name for this engine
+    function name() external pure returns (string memory);
+
     // Called by the collection to resolve a response for tokenURI
     function getTokenURI(ICollection collection, uint256 tokenId)
         external
