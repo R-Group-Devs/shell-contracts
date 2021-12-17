@@ -2,10 +2,35 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "⚙️ build contracts",
+      "label": "⚡️ deploy contracts",
       "type": "shell",
-      "command": "yarn build",
+      "command": "yarn deploy --network ${input:network}",
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 deploy debug fixtures",
+      "type": "shell",
+      "command": "yarn deploy:fixtures --network ${input:network}",
+      "problemMatcher": []
+    },
+    {
+      "label": "✅ verify contract",
+      "type": "shell",
+      "command": "yarn verify --network ${input:network} ${input:contract}",
       "problemMatcher": []
     }
+  ],
+  "inputs": [
+    {
+      "id": "network",
+      "description": "Network Name (eg rinkeby, ropsten, etc)",
+      "default": "rinkeby",
+      "type": "promptString"
+    },
+    {
+      "id": "contract",
+      "description": "contract address",
+      "type": "promptString"
+    },
   ]
 }
