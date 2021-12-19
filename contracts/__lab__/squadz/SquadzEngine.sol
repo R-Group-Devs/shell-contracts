@@ -23,15 +23,6 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
     IPersonalizedDescriptor immutable defaultDescriptor;
     mapping(address => IPersonalizedDescriptor) public adminDescriptors;
     mapping(address => IPersonalizedDescriptor) public memberDescriptors;
-    mapping(address => IPersonalizedDescriptor) public fanDescriptors;
-
-    //===== Types =====//
-
-    enum Role {
-      NONE, // Because the first enum item will be 0 and the default stored mapping value will be 0
-      ADMIN, // can mint all NFT roles, burn admin and member NFTs
-      MEMBER // can mint member and fan NFTs
-    }
 
     //===== Constructor =====//
 
@@ -57,13 +48,10 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         view
         returns (string memory) {
         IPersonalizedDescriptor descriptor;
-        Role role = tokenRole(collection, tokenId);
-        if (role == Role.ADMIN) {
+        if (isAdmin(collection, tokenId)) {
             descriptor = adminDescriptors[address(collection)];
-        } else if (role == Role.MEMBER) {
-            descriptor = memberDescriptors[address(collection)];
         } else {
-            descriptor = fanDescriptors[address(collection)];
+            descriptor = memberDescriptors[address(collection)];
         }
         if (address(descriptor) == address(0)) descriptor = defaultDescriptor;
         return descriptor.getTokenURI(
@@ -83,15 +71,14 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         uint256 tokenId
     ) external {
         require(msg.sender == address(collection), "SQUADZ: beforeTokenTransfer caller not collection");
-        // if token is admin or member, increment and decrement roleCounts appropriately
-        Role role = tokenRole(collection, tokenId);
-        if (role == Role.ADMIN || role == Role.MEMBER) {
-            _decrementAddressRoleCount(collection, from, role);
-            _incrementAddressRoleCount(collection, to, role);
+        // if token is admin, increment and decrement adminTokenCount appropriately
+        if (isAdmin(collection, tokenId)) {
+            _decrementAdminTokenCount(collection, from);
+            _incrementAdminTokenCount(collection, to);
         }
     }
 
-    function setDescriptor(ICollection collection, address descriptorAddress, Role role) external {
+    function setDescriptor(ICollection collection, address descriptorAddress, bool admin) external {
         require(
             Collection(address(collection)).owner() == msg.sender, 
             "SQUADZ: sender not collection owner"
@@ -101,12 +88,10 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
             descriptor.supportsInterface(type(IPersonalizedDescriptor).interfaceId),
             "SQUADZ: invalid descriptor address"
         );
-        if (role == Role.ADMIN) {
+        if (admin == true) {
             adminDescriptors[address(collection)] = descriptor;
-        } else if (role == Role.MEMBER) {
-            memberDescriptors[address(collection)] = descriptor;
         } else {
-            fanDescriptors[address(collection)] = descriptor;
+            memberDescriptors[address(collection)] = descriptor;
         }
     }
 
@@ -115,16 +100,22 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
     function mint(
         ICollection collection,
         address to,
-        Role role
+        bool admin
     ) public returns (uint256) {
-        _validateMint(collection, role);
+        require(
+            isAdmin(collection, msg.sender) || Collection(address(collection)).owner() == msg.sender,
+            "SQUADZ: only collection owner or admin token holder can mint"
+        );
 
         StringStorage[] memory stringData = new StringStorage[](0);
         IntStorage[] memory intData = new IntStorage[](1);
-        intData[0].key = _tokenRoleKey(
-            Collection(address(collection)).nextTokenId() + 1
-        );
-        intData[0].value = uint256(role);
+        if (admin == true) {
+          intData[0].key = _adminTokenKey(
+              Collection(address(collection)).nextTokenId() + 1
+          );
+          intData[0].value = 1;
+          _incrementAdminTokenCount(collection, to);
+        }
 
         uint256 tokenId = collection.mint(
             to,
@@ -140,25 +131,36 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
             })
         );
 
-        _incrementAddressRoleCount(collection, to, role);
-
         return tokenId;
     }
 
     function batchMint(
         ICollection collection,
         address[] calldata toAddresses,
-        Role[] calldata roles
+        bool[] calldata adminBools
     ) public returns (uint256[] memory) {
-        require(toAddresses.length == roles.length, "SQUADZ: toAddresses and roles arrays different lengths");
-        uint256[] memory ids = new uint256[](roles.length);
-        for (uint256 i = 0; i < roles.length; i++) {
-            ids[i] = mint(collection, toAddresses[i], roles[i]);
+        require(toAddresses.length == adminBools.length, "SQUADZ: toAddresses and adminBools arrays have different lengths");
+        uint256[] memory ids = new uint256[](adminBools.length);
+        for (uint256 i = 0; i < adminBools.length; i++) {
+            ids[i] = mint(collection, toAddresses[i], adminBools[i]);
         }
         return ids;
     }
 
     // TODO burn -- need this to be implemented in Collection first
+
+    function isAdmin(ICollection collection, uint256 tokenId) public view returns (bool) {
+        require(
+            Collection(address(collection)).ownerOf(tokenId) != address(0), 
+            "SQUADZ: token doesn't exist"
+        );
+        return collection.readInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
+    }
+
+    function isAdmin(ICollection collection, address address_) public view returns (bool) {
+        if (_adminTokenCount(collection, address_) > 0) return true;
+        return false;
+    }
 
     function supportsInterface(bytes4 interfaceId)
         public
@@ -170,53 +172,32 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         return interfaceId == type(IEngine).interfaceId;
     }
 
-    function tokenRole(ICollection collection, uint256 tokenId) public view returns (Role) {
-        return Role(collection.readInt(StorageLocation.MINT_DATA, _tokenRoleKey(tokenId)));
-    }
-
-    function isRole(ICollection collection, address address_, Role role) public view returns (bool) {
-        if (_roleCount(collection, address_, role) > 0) return true;
-        return false;
-    }
-
     //===== Private Functions =====//
 
-    function _tokenRoleKey(uint256 tokenId) private pure returns (string memory) {
+    function _adminTokenKey(uint256 tokenId) private pure returns (string memory) {
         return string(abi.encode(tokenId));
     }
 
-    function _addressRoleKey(address address_, Role role) private pure returns (string memory) {
-        // TODO this is a very awkward structure! is there a better way?
-        return string(abi.encode(keccak256(abi.encodePacked(address_, role))));
+    function _adminTokenCountKey(address address_) private pure returns (string memory) {
+        return string(abi.encode(address_));
     }
 
-    function _roleCount(ICollection collection, address address_, Role role) private view returns (uint256) {
-        return collection.readInt(StorageLocation.ENGINE, _addressRoleKey(address_, role));
+    function _adminTokenCount(ICollection collection, address address_) private view returns (uint256) {
+        return collection.readInt(StorageLocation.ENGINE, _adminTokenCountKey(address_));
     }
 
-    function _setAddressRoleCount(ICollection collection, address address_, Role role, uint256 value) private {
-        collection.writeInt(StorageLocation.ENGINE, _addressRoleKey(address_, role), value);
+    function _setAdminTokenCount(ICollection collection, address address_, uint256 value) private {
+        collection.writeInt(StorageLocation.ENGINE, _adminTokenCountKey(address_), value);
     }
 
-    function _incrementAddressRoleCount(ICollection collection, address address_, Role role) private {
-        uint256 count = _roleCount(collection, address_, role);
-        _setAddressRoleCount(collection, address_, role, count + 1);
+    function _incrementAdminTokenCount(ICollection collection, address address_) private {
+        uint256 count = _adminTokenCount(collection, address_);
+        _setAdminTokenCount(collection, address_, count + 1);
     }
 
-    function _decrementAddressRoleCount(ICollection collection, address address_, Role role) private {
-        uint256 count = _roleCount(collection, address_, role);
-        require(count > 0, "SQUADZ: cannot decrement address role count of 0");
-        _setAddressRoleCount(collection, address_, role, count - 1);
-    }
-
-    function _validateMint(ICollection collection, Role role) private view {
-        if (Collection(address(collection)).owner() == msg.sender) return;
-        bool isAdmin = isRole(collection, msg.sender, Role.ADMIN);
-        bool isMember = isRole(collection, msg.sender, Role.MEMBER);
-        if (role == Role.ADMIN) {
-            require(isAdmin == true, "SQUADZ: sender not admin");
-        } else {
-            require(isAdmin == true || isMember == true, "SQUADZ: sender not admin or member");
-        }
+    function _decrementAdminTokenCount(ICollection collection, address address_) private {
+        uint256 count = _adminTokenCount(collection, address_);
+        require(count > 0, "SQUADZ: cannot decrement admin token count of 0");
+        _setAdminTokenCount(collection, address_, count - 1);
     }
 }
