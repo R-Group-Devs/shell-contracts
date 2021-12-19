@@ -23,8 +23,6 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
     //===== Engine State =====//
 
     IPersonalizedDescriptor immutable defaultDescriptor;
-    mapping(address => IPersonalizedDescriptor) public adminDescriptors;
-    mapping(address => IPersonalizedDescriptor) public memberDescriptors;
 
     //===== Constructor =====//
 
@@ -41,7 +39,7 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
 
     // display name for this engine
     function name() external pure returns (string memory) {
-        return "SQUADZ";
+        return "SQUADZ v0.0.0";
     }
 
     // Called by the collection to resolve a response for tokenURI
@@ -51,9 +49,9 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         returns (string memory) {
         IPersonalizedDescriptor descriptor;
         if (isAdmin(collection, tokenId)) {
-            descriptor = adminDescriptors[address(collection)];
+            descriptor = _getDescriptor(collection, true);
         } else {
-            descriptor = memberDescriptors[address(collection)];
+            descriptor = _getDescriptor(collection, false);
         }
         if (address(descriptor) == address(0)) descriptor = defaultDescriptor;
         return descriptor.getTokenURI(
@@ -85,7 +83,7 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
             Collection(address(collection)).owner() == msg.sender, 
             "SQUADZ: sender not collection owner"
         );
-        _setDescriptor(collection, descriptorAddress, admin);
+        _setDescriptorAddress(collection, descriptorAddress, admin);
     }
 
     //===== Public Functions =====//
@@ -167,27 +165,63 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
 
     //===== Internal Functions =====//
 
-    function _setDescriptor(ICollection collection, address descriptorAddress, bool admin) internal {
+    function _setDescriptorAddress(ICollection collection, address descriptorAddress, bool admin) internal {
         IPersonalizedDescriptor descriptor = IPersonalizedDescriptor(descriptorAddress);
         require(
             descriptor.supportsInterface(type(IPersonalizedDescriptor).interfaceId),
             "SQUADZ: invalid descriptor address"
         );
         if (admin == true) {
-            adminDescriptors[address(collection)] = descriptor;
+            collection.writeInt(
+                StorageLocation.ENGINE, 
+                _adminDescriptorKey(), 
+                uint256(uint160(descriptorAddress))
+            );
         } else {
-            memberDescriptors[address(collection)] = descriptor;
+            collection.writeInt(
+                StorageLocation.ENGINE, 
+                _memberDescriptorKey(), 
+                uint256(uint160(descriptorAddress))
+            );
         }
+    }
+
+    function _getDescriptor(ICollection collection, bool admin) internal view returns (IPersonalizedDescriptor) {
+        IPersonalizedDescriptor descriptor;
+        if (admin == true) {
+            descriptor = IPersonalizedDescriptor(address(uint160(
+                collection.readInt(
+                    StorageLocation.ENGINE, 
+                    _adminDescriptorKey()
+                )
+            )));
+        } else {
+            descriptor = IPersonalizedDescriptor(address(uint160(
+                collection.readInt(
+                    StorageLocation.ENGINE, 
+                    _memberDescriptorKey()
+                )
+            )));
+        }
+        return descriptor;
     }
 
     //===== Private Functions =====//
 
     function _adminTokenKey(uint256 tokenId) private pure returns (string memory) {
-        return string(abi.encode(tokenId));
+        return string(abi.encodePacked(tokenId, "ADMIN_TOKEN"));
     }
 
     function _adminTokenCountKey(address address_) private pure returns (string memory) {
-        return string(abi.encode(address_));
+        return string(abi.encodePacked(address_, "ADMIN_TOKEN_COUNT"));
+    }
+
+    function _adminDescriptorKey() private pure returns (string memory) {
+        return "ADMIN_DESCRIPTOR_KEY";
+    }
+
+    function _memberDescriptorKey() private pure returns (string memory) {
+        return "MEMBER_DESCRIPTOR_KEY";
     }
 
     function _adminTokenCount(ICollection collection, address address_) private view returns (uint256) {
