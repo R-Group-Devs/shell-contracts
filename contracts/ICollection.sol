@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/interfaces/IERC165.sol";
+import "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import "./IEngine.sol";
 
 // Data provided by engine when minting a new token
@@ -45,8 +47,13 @@ struct IntStorage {
     uint256 value;
 }
 
-// Interface for every collection launched by the framework
-interface ICollection {
+// Interface for every collection launched by the framework. Concrete
+// implementations must return true on ERC165 checks for this interface
+interface ICollection is IERC165, IERC2981 {
+    // ---
+    // Framework events
+    // ---
+
     // A new engine was installed
     event EngineInstalled(IEngine indexed engine);
 
@@ -88,14 +95,14 @@ interface ICollection {
     // Published events
     // ---
 
-    // A string was stored in the collection
+    // A string was published from the collection
     event CollectionStringPublished(
         PublishChannel indexed location,
         string indexed key,
         string value
     );
 
-    // A string was stored in a token
+    // A string was published from a token
     event TokenStringPublished(
         PublishChannel indexed location,
         uint256 indexed tokenId,
@@ -103,14 +110,14 @@ interface ICollection {
         string value
     );
 
-    // A uint256 was stored in the collection
+    // A uint256 was published from the collection
     event CollectionIntPublished(
         PublishChannel indexed location,
         string indexed key,
         uint256 value
     );
 
-    // A uint256 was stored in a token
+    // A uint256 was published from a token
     event TokenIntPublished(
         PublishChannel indexed location,
         uint256 indexed tokenId,

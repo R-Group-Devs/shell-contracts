@@ -10,7 +10,6 @@ import "./ICollection.sol";
 
 contract Collection is
     ICollection,
-    IERC2981,
     Initializable,
     ERC721Upgradeable,
     OwnableUpgradeable
@@ -45,6 +44,15 @@ contract Collection is
         _transferOwnership(owner);
         _installEngine(engine);
         nextTokenId = 1;
+    }
+
+    // ---
+    // NFT owner functionality
+    // ---
+
+    function burn(uint256 tokenId) external {
+        require(ownerOf(tokenId) == _msgSender(), "shell: not nft owner");
+        _burn(tokenId);
     }
 
     // ---
