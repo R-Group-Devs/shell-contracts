@@ -16,6 +16,8 @@ import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
 
 // TODO events
 
+// TODO "fan" NFTs can be implemented as an independent lego, since they grant no priviliges and should be a separate collection
+
 contract SquadzEngine is IEngine, NoRoyaltiesEngine {
 
     //===== Engine State =====//
@@ -83,16 +85,7 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
             Collection(address(collection)).owner() == msg.sender, 
             "SQUADZ: sender not collection owner"
         );
-        IPersonalizedDescriptor descriptor = IPersonalizedDescriptor(descriptorAddress);
-        require(
-            descriptor.supportsInterface(type(IPersonalizedDescriptor).interfaceId),
-            "SQUADZ: invalid descriptor address"
-        );
-        if (admin == true) {
-            adminDescriptors[address(collection)] = descriptor;
-        } else {
-            memberDescriptors[address(collection)] = descriptor;
-        }
+        _setDescriptor(collection, descriptorAddress, admin);
     }
 
     //===== Public Functions =====//
@@ -170,6 +163,21 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         returns (bool)
     {
         return interfaceId == type(IEngine).interfaceId;
+    }
+
+    //===== Internal Functions =====//
+
+    function _setDescriptor(ICollection collection, address descriptorAddress, bool admin) internal {
+        IPersonalizedDescriptor descriptor = IPersonalizedDescriptor(descriptorAddress);
+        require(
+            descriptor.supportsInterface(type(IPersonalizedDescriptor).interfaceId),
+            "SQUADZ: invalid descriptor address"
+        );
+        if (admin == true) {
+            adminDescriptors[address(collection)] = descriptor;
+        } else {
+            memberDescriptors[address(collection)] = descriptor;
+        }
     }
 
     //===== Private Functions =====//
