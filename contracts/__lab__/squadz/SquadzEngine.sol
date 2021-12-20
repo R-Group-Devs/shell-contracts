@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IEngine} from "../../IEngine.sol";
+import {ISquadzEngine} from "./ISquadzEngine.sol";
 import {ICollection, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../ICollection.sol";
 import {Collection} from "../../Collection.sol";
 import {IPersonalizedDescriptor} from "./IPersonalizedDescriptor.sol";
@@ -18,11 +19,11 @@ import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
 
 // TODO "fan" NFTs can be implemented as an independent lego, since they grant no priviliges and should be a separate collection
 
-contract SquadzEngine is IEngine, NoRoyaltiesEngine {
+contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     //===== Engine State =====//
 
-    IPersonalizedDescriptor immutable defaultDescriptor;
+    IPersonalizedDescriptor public immutable defaultDescriptor;
 
     //===== Constructor =====//
 
@@ -86,59 +87,38 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         _setDescriptorAddress(collection, descriptorAddress, admin);
     }
 
-    //===== Public Functions =====//
-
     function mint(
         ICollection collection,
         address to,
         bool admin
-    ) public returns (uint256) {
+    ) external returns (uint256) {
         require(
             isAdmin(collection, msg.sender) || Collection(address(collection)).owner() == msg.sender,
             "SQUADZ: only collection owner or admin token holder can mint"
         );
-
-        StringStorage[] memory stringData = new StringStorage[](0);
-        IntStorage[] memory intData = new IntStorage[](1);
-        if (admin == true) {
-          intData[0].key = _adminTokenKey(
-              Collection(address(collection)).nextTokenId() + 1
-          );
-          intData[0].value = 1;
-          _incrementAdminTokenCount(collection, to);
-        }
-
-        uint256 tokenId = collection.mint(
-            to,
-            // minimal storage for minimal gas cost
-            MintOptions({
-                storeEngine: false,
-                storeMintedTo: true,
-                storeMintedBy: false,
-                storeTimestamp: false,
-                storeBlockNumber: false,
-                stringData: stringData,
-                intData: intData
-            })
-        );
-
-        return tokenId;
+        return _mint(collection, to, admin);
     }
 
     function batchMint(
         ICollection collection,
         address[] calldata toAddresses,
         bool[] calldata adminBools
-    ) public returns (uint256[] memory) {
+    ) external returns (uint256[] memory) {
         require(toAddresses.length == adminBools.length, "SQUADZ: toAddresses and adminBools arrays have different lengths");
+        require(
+            isAdmin(collection, msg.sender) || Collection(address(collection)).owner() == msg.sender,
+            "SQUADZ: only collection owner or admin token holder can mint"
+        );
         uint256[] memory ids = new uint256[](adminBools.length);
         for (uint256 i = 0; i < adminBools.length; i++) {
-            ids[i] = mint(collection, toAddresses[i], adminBools[i]);
+            ids[i] = _mint(collection, toAddresses[i], adminBools[i]);
         }
         return ids;
     }
 
     // TODO burn -- need this to be implemented in Collection first
+
+    //===== Public Functions =====//
 
     function isAdmin(ICollection collection, uint256 tokenId) public view returns (bool) {
         require(
@@ -160,10 +140,44 @@ contract SquadzEngine is IEngine, NoRoyaltiesEngine {
         override
         returns (bool)
     {
-        return interfaceId == type(IEngine).interfaceId;
+        return interfaceId == type(IEngine).interfaceId ||
+            interfaceId == type(ISquadzEngine).interfaceId;
     }
 
     //===== Internal Functions =====//
+
+    function _mint(
+        ICollection collection,
+        address to,
+        bool admin
+    ) internal returns (uint256) {
+
+        StringStorage[] memory stringData = new StringStorage[](0);
+        IntStorage[] memory intData = new IntStorage[](1);
+        if (admin == true) {
+          intData[0].key = _adminTokenKey(
+              Collection(address(collection)).nextTokenId() + 1
+          );
+          intData[0].value = 1;
+          // _incrementAdminTokenCount(collection, to); beforeTokenTransfer covers this?
+        }
+
+        uint256 tokenId = collection.mint(
+            to,
+            // minimal storage for minimal gas cost
+            MintOptions({
+                storeEngine: false,
+                storeMintedTo: true,
+                storeMintedBy: false,
+                storeTimestamp: false,
+                storeBlockNumber: false,
+                stringData: stringData,
+                intData: intData
+            })
+        );
+
+        return tokenId;
+    }
 
     function _setDescriptorAddress(ICollection collection, address descriptorAddress, bool admin) internal {
         IPersonalizedDescriptor descriptor = IPersonalizedDescriptor(descriptorAddress);
