@@ -1,10 +1,8 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const CollectionFactory = await ethers.getContractFactory(
-    "CollectionFactory"
-  );
-  const factory = await CollectionFactory.deploy();
+  const ShellFactory = await ethers.getContractFactory("ShellFactory");
+  const factory = await ShellFactory.deploy();
   await factory.deployed();
   console.log(`🐚 shell has been deployed to: ${factory.address}`);
 }
