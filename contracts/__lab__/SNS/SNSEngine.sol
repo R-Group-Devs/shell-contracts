@@ -67,7 +67,7 @@ contract SNS is
         return r;
     }
 
-    function resolver(bytes32 node_) external view override returns (address) {
+    function resolver(bytes32) external view override returns (address) {
         // In ENS, this would not always be the same address
         return address(this);
     }
@@ -121,7 +121,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
         _setBalance(collection, 0);
         // TODO re-entrancy guard
         // TODO can we get rid of the unused variable warning for data here?
-        (bool sent, bytes memory data) = owner.call{value: balance}("");
+        (bool sent, ) = owner.call{value: balance}("");
         require(sent, "Failed to send Ether");
         // TODO send WETH if ETH fails
     }
@@ -139,12 +139,12 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     // collection will wrap the downstream call in a try/catch
     // The engine MUST assert msg.sender == collection address!!
     function beforeTokenTransfer(
-        IShellFramework collection,
-        address operator,
-        address from,
-        address to,
-        uint256[] memory tokenIds,
-        uint256[] memory amounts
+        IShellFramework,
+        address,
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory
     ) external pure {
         // TODO make it optional to add implementation here?
         return;
@@ -175,12 +175,10 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     //===== Public Functions
 
     function mint(IShellERC721 collection, string calldata name_) public payable returns (uint256) {
-        address snsAddr = getSNSAddr(collection);
-        require(snsAddr != address(0), "SNS: missing SNS address--call init");
         uint256 price = getPrice(collection);
         require(msg.value == price, "SNS: wrong msg.value");
         _setBalance(collection, getBalance(collection) + price);
-        return _mint(collection, snsAddr, msg.sender, name_);
+        return _mint(collection, msg.sender, name_);
     }
 
     function setName(IShellERC721 collection, string calldata name_, address holder) public {
@@ -230,7 +228,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
 
     //===== Private Functions =====//
 
-    function _mint(IShellERC721 collection, address snsAddr, address to, string calldata name_) private returns (uint256) {
+    function _mint(IShellERC721 collection, address to, string calldata name_) private returns (uint256) {
         require(_getIdFromName(collection, name_) == 0, "SNS: name already minted");
 
         uint256 nextTokenId = collection.nextTokenId();

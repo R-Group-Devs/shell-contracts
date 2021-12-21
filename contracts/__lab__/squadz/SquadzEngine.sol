@@ -41,7 +41,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     // Called by the framework following an engine install. Can be used by the
     // engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
-    function afterInstallEngine(IShellFramework collection) external {
+    function afterInstallEngine(IShellFramework) external pure {
         return;
     }
 
@@ -76,7 +76,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     // collection will wrap the downstream call in a try/catch
     function beforeTokenTransfer(
         IShellFramework collection,
-        address operator,
+        address,
         address from,
         address to,
         uint256[] memory tokenIds,

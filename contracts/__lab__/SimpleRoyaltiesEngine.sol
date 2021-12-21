@@ -9,7 +9,7 @@ abstract contract SimpleRoyaltiesEngine is IEngine {
 
     function getRoyaltyInfo(
         IShellFramework collection,
-        uint256 tokenId,
+        uint256,
         uint256 salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         receiver = address(uint160(
