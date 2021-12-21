@@ -2,13 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "./Collection.sol";
+import "./ShellERC721.sol";
 
-contract CollectionFactory {
-    Collection public immutable implementation;
+contract ShellFactory {
+    ShellERC721 public immutable implementation;
 
     event CollectionCreated(
-        Collection indexed collection,
+        IShellFramework collection,
         string name,
         string symbol,
         IEngine engine,
@@ -16,7 +16,7 @@ contract CollectionFactory {
     );
 
     constructor() {
-        implementation = new Collection();
+        implementation = new ShellERC721();
     }
 
     // deploy a new (cloned) colllection
@@ -25,8 +25,8 @@ contract CollectionFactory {
         string calldata symbol,
         IEngine engine,
         address owner
-    ) external returns (Collection) {
-        Collection clone = Collection(Clones.clone(address(implementation)));
+    ) external returns (IShellFramework) {
+        ShellERC721 clone = ShellERC721(Clones.clone(address(implementation)));
         clone.initialize(name, symbol, engine, owner);
         emit CollectionCreated(clone, name, symbol, engine, owner);
         return clone;

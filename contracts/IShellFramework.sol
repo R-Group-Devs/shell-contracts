@@ -3,12 +3,44 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import "./libraries/IOwnable.sol";
 import "./IEngine.sol";
+
+// storage flag
+enum StorageLocation {
+    INVALID,
+    // set by the engine at any time, mutable
+    ENGINE,
+    // set by the engine during minting, immutable
+    MINT_DATA,
+    // set by the framework during minting or collection creation, immutable
+    FRAMEWORK
+}
+
+// publish flag
+enum PublishChannel {
+    INVALID,
+    // events created by anybody
+    PUBLIC,
+    // events created by engine
+    ENGINE
+}
+
+// string key / value
+struct StringStorage {
+    string key;
+    string value;
+}
+
+// int key / value
+struct IntStorage {
+    string key;
+    uint256 value;
+}
 
 // Data provided by engine when minting a new token
 struct MintOptions {
     bool storeEngine;
-    bool storeMintedBy;
     bool storeMintedTo;
     bool storeTimestamp;
     bool storeBlockNumber;
@@ -16,46 +48,16 @@ struct MintOptions {
     IntStorage[] intData;
 }
 
-// Each storage location has its own access constraints
-enum StorageLocation {
-    // set by token owner at any time, mutable
-    OWNER,
-    // set by the engine at any time, mutable
-    ENGINE,
-    // set by engine during minting, immutable
-    MINT_DATA,
-    // set by the framework during minting or collection creation, immutable
-    FRAMEWORK
-}
-
-enum PublishChannel {
-    // events created by anybody
-    PUBLIC,
-    // events created by token owner
-    OWNER,
-    // events created by engine
-    ENGINE
-}
-
-struct StringStorage {
-    string key;
-    string value;
-}
-
-struct IntStorage {
-    string key;
-    uint256 value;
-}
-
-// Interface for every collection launched by the framework. Concrete
-// implementations must return true on ERC165 checks for this interface
-interface ICollection is IERC165, IERC2981 {
+// Interface for every collection launched by shell.
+// Concrete implementations must return true on ERC165 checks for this interface
+// (as well as erc165 / 2981)
+interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
     // Framework events
     // ---
 
     // A new engine was installed
-    event EngineInstalled(IEngine indexed engine);
+    event EngineInstalled(IEngine engine);
 
     // ---
     // Storage events
@@ -63,31 +65,31 @@ interface ICollection is IERC165, IERC2981 {
 
     // A string was stored in the collection
     event CollectionStringUpdated(
-        StorageLocation indexed location,
-        string indexed key,
+        StorageLocation location,
+        string key,
         string value
     );
 
     // A string was stored in a token
     event TokenStringUpdated(
-        StorageLocation indexed location,
-        uint256 indexed tokenId,
-        string indexed key,
+        StorageLocation location,
+        uint256 tokenId,
+        string key,
         string value
     );
 
     // A uint256 was stored in the collection
     event CollectionIntUpdated(
-        StorageLocation indexed location,
-        string indexed key,
+        StorageLocation location,
+        string key,
         uint256 value
     );
 
     // A uint256 was stored in a token
     event TokenIntUpdated(
-        StorageLocation indexed location,
-        uint256 indexed tokenId,
-        string indexed key,
+        StorageLocation location,
+        uint256 tokenId,
+        string key,
         uint256 value
     );
 
@@ -97,31 +99,31 @@ interface ICollection is IERC165, IERC2981 {
 
     // A string was published from the collection
     event CollectionStringPublished(
-        PublishChannel indexed location,
-        string indexed key,
+        PublishChannel location,
+        string key,
         string value
     );
 
     // A string was published from a token
     event TokenStringPublished(
-        PublishChannel indexed location,
-        uint256 indexed tokenId,
-        string indexed key,
+        PublishChannel location,
+        uint256 tokenId,
+        string key,
         string value
     );
 
     // A uint256 was published from the collection
     event CollectionIntPublished(
-        PublishChannel indexed location,
-        string indexed key,
+        PublishChannel location,
+        string key,
         uint256 value
     );
 
     // A uint256 was published from a token
     event TokenIntPublished(
-        PublishChannel indexed location,
-        uint256 indexed tokenId,
-        string indexed key,
+        PublishChannel location,
+        uint256 tokenId,
+        string key,
         uint256 value
     );
 
@@ -134,15 +136,6 @@ interface ICollection is IERC165, IERC2981 {
 
     // the currently installed engine for this collection
     function installedEngine() external view returns (IEngine);
-
-    // ---
-    // Engine functionality
-    // ---
-
-    // Mint a new token. Only callable by engine
-    function mint(address to, MintOptions calldata options)
-        external
-        returns (uint256);
 
     // ---
     // Storage writes
