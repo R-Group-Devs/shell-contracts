@@ -20,7 +20,7 @@ contract RGroupPlaceholder is
     using Strings for uint256;
 
     function getEngineName() external pure returns (string memory) {
-        return "R Group Membership";
+        return "r-group-placeholder";
     }
 
     function mint(
