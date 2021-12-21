@@ -6,8 +6,10 @@ import {RegistrarLike} from "./RegistrarLike.sol";
 import {ReverseRegistrarLike} from "./ReverseRegistrarLike.sol";
 import {ReverseRecordsLike} from "./ReverseRecordsLike.sol";
 import {IEngine} from "../../IEngine.sol";
-import {ICollection, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../ICollection.sol";
-import {Collection} from "../../Collection.sol";
+// import {IShellFramework, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellFramework.sol";
+import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
+// import {ShellFramework} from "../../ShellFramework.sol";
+import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
 
 /**
  * Insert standard reference to shell here
@@ -35,20 +37,19 @@ contract SNS is
     NameResolverLike, 
     RegistrarLike, 
     ReverseRegistrarLike,
-    ReverseRecordsLike
+    ReverseRecordsLike,
+    SimpleRoyaltiesEngine
 {
     //===== State =====//
 
     SNSEngine private immutable _engine;
-    ICollection public immutable collection;
-    uint256 public price;
+    IShellERC721 public immutable collection;
 
     //===== Constructor =====//
 
-    constructor(address engine, address collection_, uint256 price_) {
+    constructor(address engine, address collection_) {
         _engine = SNSEngine(engine);
-        collection = ICollection(collection_);
-        price = price_;
+        collection = IShellERC721(collection_);
     }
 
     //===== External Functions
@@ -88,35 +89,48 @@ contract SNS is
 // TODO set some royalties in constructor
 
 contract SNSEngine is IEngine {
+    //===== State =====//
+
+    uint256 constant MAX_INT = 2**256-1;
+
     //===== External Functions =====//
 
-    // display name for this engine
-    function name() external pure returns (string memory) {
+    // Get the name for this engine
+    function getEngineName() external pure returns (string memory) {
         return "SNS v0.0.0";
     }
 
-    function init(
-        ICollection collection, 
+    // Called by the framework following an engine install. Can be used by the
+    // engine to block (by reverting) installation if needed.
+    // The engine MUST assert msg.sender == collection address!!
+    function afterInstallEngine(IShellERC721 collection) external collectionOwnerOnly(collection) {
+        address snsAddr = address(new SNS(address(this), address(collection)));
+        _setSNS(collection, snsAddr);
+        // start with a price too expensive to buy so the owner can do a "fair release" at a lower price and later time
+        _setPrice(collection, MAX_INT);
+    }
+
+    // General purpose configuration, should also be used to "release" names by lowering price from max int
+    function config(
+        IShellERC721 collection, 
         uint256 price, 
         address royaltyReceiver, 
         uint256 royaltyAmount
     ) collectionOwnerOnly(collection) external {
-        address snsAddr = address(new SNS(address(this), address(collection), price));
-        _setSNS(collection, snsAddr);
         _setPrice(collection, price);
         if (royaltyReceiver != address(0) || royaltyAmount != 0) {
             setRoyaltyInfo(collection, royaltyReceiver, royaltyAmount);
         }
-    }
+    }    
 
-    function mintAndSet(ICollection collection, string calldata name_) external payable returns (uint256) {
+    function mintAndSet(IShellERC721 collection, string calldata name_) external payable returns (uint256) {
         uint256 tokenId = mint(collection, name_);
         setName(collection, name_, msg.sender);
         return tokenId;
     }
 
-    function withdraw(ICollection collection) external {
-        address owner = Collection(address(collection)).owner();
+    function withdraw(IShellERC721 collection) external {
+        address owner = collection.owner();
         uint256 balance = getBalance(collection);
         _setBalance(collection, 0);
         // TODO re-entrancy guard
@@ -127,23 +141,24 @@ contract SNSEngine is IEngine {
     }
 
     // Called by the collection to resolve a response for tokenURI
-    function getTokenURI(ICollection collection, uint256 tokenId)
+    function getTokenURI(IShellERC721 collection, uint256 tokenId)
         external
         view
         returns (string memory) {
         return getNameFromTokenId(collection, tokenId);
     }
 
-    // TODO needs burn
-
-    // Called by the collection during a transfer, including mints (from=0) and
+    // Called by the framework during a transfer, including mints (from=0) and
     // burns (to=0). Cannot break transfer even in the case of reverting, as the
     // collection will wrap the downstream call in a try/catch
+    // The engine MUST assert msg.sender == collection address!!
     function beforeTokenTransfer(
-        ICollection collection,
+        IShellERC721 collection,
+        address operator,
         address from,
         address to,
-        uint256 tokenId
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
     ) external pure {
         // TODO make it optional to add implementation here?
         return;
@@ -171,34 +186,9 @@ contract SNSEngine is IEngine {
         }
     }
 
-    function getRoyaltyInfo(
-        ICollection collection,
-        uint256 tokenId,
-        uint256 salePrice
-    ) external view returns (address receiver, uint256 royaltyAmount) {
-        receiver = address(uint160(
-            collection.readInt(StorageLocation.ENGINE, _royaltyReceiverKey(collection))
-        ));
-        uint256 basisPoints = collection.readInt(StorageLocation.ENGINE, _royaltyBasisKey(collection));
-        royaltyAmount = salePrice * basisPoints / 10000;
-    }
-
     //===== Public Functions
 
-    function setRoyaltyInfo(
-        ICollection collection, 
-        address receiver, 
-        uint256 royaltyBasisPoints
-    ) public collectionOwnerOnly(collection) {
-        collection.writeInt(
-            StorageLocation.ENGINE, 
-            _royaltyReceiverKey(collection), 
-            uint256(uint160(receiver))
-        );
-        collection.writeInt(StorageLocation.ENGINE, _royaltyBasisKey(collection), royaltyBasisPoints);
-    }
-
-    function mint(ICollection collection, string calldata name_) public payable returns (uint256) {
+    function mint(IShellERC721 collection, string calldata name_) public payable returns (uint256) {
         address snsAddr = getSNSAddr(collection);
         require(snsAddr != address(0), "SNS: missing SNS address--call init");
         uint256 price = getPrice(collection);
@@ -207,34 +197,38 @@ contract SNSEngine is IEngine {
         return _mint(collection, snsAddr, msg.sender, name_);
     }
 
-    function setName(ICollection collection, string calldata name_, address holder) public {
+    function setName(IShellERC721 collection, string calldata name_, address holder) public {
         uint256 tokenId = _getIdFromName(collection, name_);
-        address tokenOwner = Collection(address(collection)).ownerOf(tokenId);
+        address tokenOwner = collection.ownerOf(tokenId);
         require(tokenOwner == holder, "SNS: name can only be set to its holder");
         address snsAddr = getSNSAddr(collection);
         require(snsAddr != address(0), "SNS: missing SNS address--call init");
         _setName(collection, SNS(snsAddr).node(holder), tokenId);
     }
 
-    function getSNSAddr(ICollection collection) public view returns (address) {
+    function getSNSAddr(IShellERC721 collection) public view returns (address) {
         return address(uint160(
             collection.readInt(StorageLocation.ENGINE, _snsKey())
         ));
     }
 
-    function getPrice(ICollection collection) public view returns (uint256) {
+    function getPrice(IShellERC721 collection) public view returns (uint256) {
         return collection.readInt(StorageLocation.ENGINE, _priceKey());
     }
 
-    function getBalance(ICollection collection) public view returns (uint256) {
+    function setPrice(IShellERC721 collection, uint256 price) public collectionOwnerOnly(collection) {
+        collection.writeInt(StorageLocation.ENGINE, _priceKey(), price);
+    }
+
+    function getBalance(IShellERC721 collection) public view returns (uint256) {
         return collection.readInt(StorageLocation.ENGINE, _balanceKey(collection));
     }
 
-    function getNameFromTokenId(ICollection collection, uint256 tokenId) public view returns (string memory) {
+    function getNameFromTokenId(IShellERC721 collection, uint256 tokenId) public view returns (string memory) {
         return collection.readString(StorageLocation.MINT_DATA, _idToNameKey(tokenId));
     }
 
-    function getNameId(ICollection collection, bytes32 node) public view returns (uint256) {
+    function getNameId(IShellERC721 collection, bytes32 node) public view returns (uint256) {
         return collection.readInt(StorageLocation.ENGINE, _nameKey(node));
     }
 
@@ -250,16 +244,16 @@ contract SNSEngine is IEngine {
 
     //===== Private Functions =====//
 
-    function _mint(ICollection collection, address snsAddr, address to, string calldata name_) private returns (uint256) {
+    function _mint(IShellERC721 collection, address snsAddr, address to, string calldata name_) private returns (uint256) {
         require(_getIdFromName(collection, name_) == 0, "SNS: name already minted");
 
-        uint256 predictedTokenId = Collection(address(collection)).nextTokenId() + 1;
+        uint256 nextTokenId = collection.nextTokenId();
         StringStorage[] memory stringData = new StringStorage[](1);
-        stringData[0].key = _idToNameKey(predictedTokenId);
+        stringData[0].key = _idToNameKey(nextTokenId);
         stringData[0].value = name_;
         IntStorage[] memory intData = new IntStorage[](1);
         intData[0].key = name_;
-        intData[0].value = predictedTokenId;
+        intData[0].value = nextTokenId;
 
         uint256 tokenId = collection.mint(
             to,
@@ -288,7 +282,7 @@ contract SNSEngine is IEngine {
         return "SNS";
     }
 
-    function _setSNS(ICollection collection, address snsAddr) private {
+    function _setSNS(IShellERC721 collection, address snsAddr) private {
         collection.writeInt(
             StorageLocation.ENGINE,
             _snsKey(),
@@ -296,27 +290,15 @@ contract SNSEngine is IEngine {
         );
     }
 
-    function _royaltyReceiverKey(ICollection collection) private pure returns (string memory) {
-        return string(abi.encodePacked(address(collection), "ROYALTY_RECEIVER"));
-    }
-
-    function _royaltyBasisKey(ICollection collection) private pure returns (string memory) {
-        return string(abi.encodePacked(address(collection), "ROYALTY_BASIS"));
-    }
-
     function _priceKey() private pure returns (string memory) {
         return "PRICE";
     }
 
-    function _setPrice(ICollection collection, uint256 price) private {
-        collection.writeInt(StorageLocation.ENGINE, _priceKey(), price);
-    }
-
-    function _balanceKey(ICollection collection) private pure returns (string memory) {
+    function _balanceKey(IShellERC721 collection) private pure returns (string memory) {
         return string(abi.encodePacked(address(collection), "BALANCE"));
     }
 
-    function _setBalance(ICollection collection, uint256 value) private {
+    function _setBalance(IShellERC721 collection, uint256 value) private {
         collection.writeInt(StorageLocation.ENGINE, _balanceKey(collection), value);
     }
 
@@ -324,7 +306,7 @@ contract SNSEngine is IEngine {
         return string(abi.encodePacked(node));
     }
 
-    function _setName(ICollection collection, bytes32 node, uint256 tokenId) private {
+    function _setName(IShellERC721 collection, bytes32 node, uint256 tokenId) private {
         collection.writeInt(StorageLocation.ENGINE, _nameKey(node), tokenId);
     }
 
@@ -332,14 +314,14 @@ contract SNSEngine is IEngine {
         return string(abi.encodePacked(tokenId));
     }
 
-    function _getIdFromName(ICollection collection, string calldata name_) private view returns (uint256) {
+    function _getIdFromName(IShellERC721 collection, string calldata name_) private view returns (uint256) {
         return collection.readInt(StorageLocation.MINT_DATA, name_);
     }
 
     //===== Modifiers =====//
 
-    modifier collectionOwnerOnly(ICollection collection) {
-        require(msg.sender == Collection(address(collection)).owner(), "SNS: msg.sender not collection owner");
+    modifier collectionOwnerOnly(IShellERC721 collection) {
+        require(msg.sender == collection.owner(), "SNS: msg.sender not collection owner");
         _;
     }
 }

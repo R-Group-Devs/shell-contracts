@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../IShellFramework.sol";
+import "../IEngine.sol";
 
 abstract contract NoRoyaltiesEngine is IEngine {
     function getRoyaltyInfo(
