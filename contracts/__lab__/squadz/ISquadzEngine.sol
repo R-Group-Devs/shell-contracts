@@ -1,20 +1,20 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IShellFramework} from "../../IShellFramework.sol";
+import {IShellERC721} from "../../IShellERC721.sol";
 import {IEngine} from "../../IEngine.sol";
 
 interface ISquadzEngine is IEngine {
-    function setDescriptor(IShellFramework collection, address descriptorAddress, bool admin) external;
+    function setDescriptor(IShellERC721 collection, address descriptorAddress, bool admin) external;
 
     function mint(
-        IShellFramework collection,
+        IShellERC721 collection,
         address to,
         bool admin
     ) external returns (uint256);
 
     function batchMint(
-        IShellFramework collection,
+        IShellERC721 collection,
         address[] calldata toAddresses,
         bool[] calldata adminBools
     ) external returns (uint256[] memory);

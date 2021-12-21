@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IEngine} from "../../IEngine.sol";
 import {ISquadzEngine} from "./ISquadzEngine.sol";
+import {IShellFramework} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
 import {IPersonalizedDescriptor} from "./IPersonalizedDescriptor.sol";
 import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
@@ -40,22 +41,24 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     // Called by the framework following an engine install. Can be used by the
     // engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
-    function afterInstallEngine(IShellERC721 collection) external {
+    function afterInstallEngine(IShellFramework collection) external {
         return;
     }
 
-    // display name for this engine
-    function name() external pure returns (string memory) {
+    // Get the name for this engine
+    function getEngineName() external pure returns (string memory) {
         return "SQUADZ v0.0.0";
     }
 
     // Called by the collection to resolve a response for tokenURI
-    function getTokenURI(IShellERC721 collection, uint256 tokenId)
+    function getTokenURI(IShellFramework collection, uint256 tokenId)
         external
         view
         returns (string memory) {
         IPersonalizedDescriptor descriptor;
-        if (isAdmin(collection, tokenId)) {
+        // TODO still having to do these awkward conversions -- not the end of the world
+        IShellERC721 token = IShellERC721(address(collection));
+        if (isAdminToken(token, tokenId)) {
             descriptor = _getDescriptor(collection, true);
         } else {
             descriptor = _getDescriptor(collection, false);
@@ -64,7 +67,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return descriptor.getTokenURI(
             address(collection), 
             tokenId, 
-            collection.ownerOf(tokenId)
+            token.ownerOf(tokenId)
         );
     }
 
@@ -72,7 +75,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     // burns (to=0). Cannot break transfer even in the case of reverting, as the
     // collection will wrap the downstream call in a try/catch
     function beforeTokenTransfer(
-        IShellERC721 collection,
+        IShellFramework collection,
         address operator,
         address from,
         address to,
@@ -83,7 +86,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         // if token is admin, increment and decrement adminTokenCount appropriately
         if (tokenIds.length == 0) return;
         require(tokenIds.length == amounts.length, "SQUADZ: array length mismatch");
-        if (isAdmin(collection, tokenIds[0])) {
+        if (isAdminToken(IShellERC721(address(collection)), tokenIds[0])) {
             _decrementAdminTokenCount(collection, from);
             _incrementAdminTokenCount(collection, to);
         }
@@ -130,7 +133,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     //===== Public Functions =====//
 
-    function isAdmin(IShellERC721 collection, uint256 tokenId) public view returns (bool) {
+    function isAdminToken(IShellERC721 collection, uint256 tokenId) public view returns (bool) {
         require(
             collection.ownerOf(tokenId) != address(0), 
             "SQUADZ: token doesn't exist"
@@ -138,7 +141,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return collection.readInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
     }
 
-    function isAdmin(IShellERC721 collection, address address_) public view returns (bool) {
+    function isAdmin(IShellFramework collection, address address_) public view returns (bool) {
         if (_adminTokenCount(collection, address_) > 0) return true;
         return false;
     }
@@ -176,7 +179,6 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
             MintOptions({
                 storeEngine: false,
                 storeMintedTo: true,
-                storeMintedBy: false,
                 storeTimestamp: false,
                 storeBlockNumber: false,
                 stringData: stringData,
@@ -208,7 +210,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         }
     }
 
-    function _getDescriptor(IShellERC721 collection, bool admin) internal view returns (IPersonalizedDescriptor) {
+    function _getDescriptor(IShellFramework collection, bool admin) internal view returns (IPersonalizedDescriptor) {
         IPersonalizedDescriptor descriptor;
         if (admin == true) {
             descriptor = IPersonalizedDescriptor(address(uint160(
@@ -246,20 +248,20 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return "MEMBER_DESCRIPTOR_KEY";
     }
 
-    function _adminTokenCount(IShellERC721 collection, address address_) private view returns (uint256) {
+    function _adminTokenCount(IShellFramework collection, address address_) private view returns (uint256) {
         return collection.readInt(StorageLocation.ENGINE, _adminTokenCountKey(address_));
     }
 
-    function _setAdminTokenCount(IShellERC721 collection, address address_, uint256 value) private {
+    function _setAdminTokenCount(IShellFramework collection, address address_, uint256 value) private {
         collection.writeInt(StorageLocation.ENGINE, _adminTokenCountKey(address_), value);
     }
 
-    function _incrementAdminTokenCount(IShellERC721 collection, address address_) private {
+    function _incrementAdminTokenCount(IShellFramework collection, address address_) private {
         uint256 count = _adminTokenCount(collection, address_);
         _setAdminTokenCount(collection, address_, count + 1);
     }
 
-    function _decrementAdminTokenCount(IShellERC721 collection, address address_) private {
+    function _decrementAdminTokenCount(IShellFramework collection, address address_) private {
         uint256 count = _adminTokenCount(collection, address_);
         require(count > 0, "SQUADZ: cannot decrement admin token count of 0");
         _setAdminTokenCount(collection, address_, count - 1);

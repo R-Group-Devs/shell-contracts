@@ -25,7 +25,8 @@ abstract contract SimpleRoyaltiesEngine is IEngine {
         IShellFramework collection, 
         address receiver, 
         uint256 royaltyBasisPoints
-    ) public collectionOwnerOnly(collection) {
+    ) public {
+        require(msg.sender == collection.owner(), "SNS: msg.sender not collection owner");
         collection.writeInt(
             StorageLocation.ENGINE, 
             _royaltyReceiverKey(collection), 
