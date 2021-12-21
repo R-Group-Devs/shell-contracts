@@ -7,7 +7,13 @@ import "./ShellERC721.sol";
 contract ShellFactory {
     ShellERC721 public immutable implementation;
 
-    event CollectionCreated(IShellFramework collection);
+    event CollectionCreated(
+        IShellFramework collection,
+        string name,
+        string symbol,
+        IEngine engine,
+        address owner
+    );
 
     constructor() {
         implementation = new ShellERC721();
@@ -22,7 +28,7 @@ contract ShellFactory {
     ) external returns (IShellFramework) {
         ShellERC721 clone = ShellERC721(Clones.clone(address(implementation)));
         clone.initialize(name, symbol, engine, owner);
-        emit CollectionCreated(clone);
+        emit CollectionCreated(clone, name, symbol, engine, owner);
         return clone;
     }
 }
