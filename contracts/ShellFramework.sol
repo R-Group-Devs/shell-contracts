@@ -7,7 +7,7 @@ import "./IShellFramework.sol";
 
 // Abstract implementation of the shell framework interface -- can be used as a
 // base for all shell collections
-contract ShellFramework is IShellFramework, Initializable, Ownable {
+abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Currently installed engine
     IEngine public installedEngine;
 
@@ -18,6 +18,7 @@ contract ShellFramework is IShellFramework, Initializable, Ownable {
     mapping(bytes32 => uint256) private _intStorage;
 
     // used to initialize the clone
+    // solhint-disable-next-line func-name-mixedcase
     function __ShellFramework_init(IEngine engine, address owner)
         internal
         onlyInitializing
