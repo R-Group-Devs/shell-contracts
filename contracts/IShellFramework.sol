@@ -128,6 +128,16 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     );
 
     // ---
+    // General collection info / metadata
+    // ---
+
+    // collection name
+    function name() external view returns (string memory);
+
+    // collection name
+    function symbol() external view returns (string memory);
+
+    // ---
     // Collection owner (admin) functionaltiy
     // ---
 

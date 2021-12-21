@@ -9,18 +9,40 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     uint256 public nextTokenId;
 
     function initialize(
-        string calldata name,
-        string calldata symbol,
+        string calldata name_,
+        string calldata symbol_,
         IEngine engine,
-        address owner
+        address owner_
     ) external initializer {
         // using the unchained variant since theres no real need to init the
         // erc165 and context stuff from openzep's 721
-        __ERC721_init_unchained(name, symbol);
+        __ERC721_init_unchained(name_, symbol_);
 
-        __ShellFramework_init(engine, owner);
+        __ShellFramework_init(engine, owner_);
 
         nextTokenId = 1;
+    }
+
+    // ---
+    // Standard ERC721 stuff
+    // ---
+
+    function name()
+        public
+        view
+        override(IShellFramework, ERC721Upgradeable)
+        returns (string memory)
+    {
+        return ERC721Upgradeable.name();
+    }
+
+    function symbol()
+        public
+        view
+        override(IShellFramework, ERC721Upgradeable)
+        returns (string memory)
+    {
+        return ERC721Upgradeable.symbol();
     }
 
     // ---
