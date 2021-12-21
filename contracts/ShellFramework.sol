@@ -1,24 +1,15 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/interfaces/IERC2981.sol";
-import "./IEngine.sol";
-import "./ICollection.sol";
+import "./libraries/Ownable.sol";
+import "./IShellFramework.sol";
 
-contract Collection is
-    ICollection,
-    Initializable,
-    ERC721Upgradeable,
-    OwnableUpgradeable
-{
+// Abstract implementation of the shell framework interface -- can be used as a
+// base for all shell collections
+contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Currently installed engine
     IEngine public installedEngine;
-
-    // token id serial number
-    uint256 public nextTokenId;
 
     // all stored strings
     mapping(bytes32 => string) private _stringStorage;
@@ -26,33 +17,13 @@ contract Collection is
     // all stored ints
     mapping(bytes32 => uint256) private _intStorage;
 
-    function initialize(
-        string calldata name,
-        string calldata symbol,
-        IEngine engine,
-        address owner
-    ) external initializer {
-        // also inits Context, ERC165
-        __ERC721_init(name, symbol);
-
-        // purposefully omitting __Ownable_init
-        //
-        // its init chain only has Context (which is inited in the 721 call
-        // above), and for our own init-ing we're setting owner based on the
-        // function argument, so no need to assign it twice
-
+    // used to initialize the clone
+    function __ShellFramework_init(IEngine engine, address owner)
+        internal
+        onlyInitializing
+    {
         _transferOwnership(owner);
         _installEngine(engine);
-        nextTokenId = 1;
-    }
-
-    // ---
-    // NFT owner functionality
-    // ---
-
-    function burn(uint256 tokenId) external {
-        require(ownerOf(tokenId) == _msgSender(), "shell: not nft owner");
-        _burn(tokenId);
     }
 
     // ---
@@ -63,7 +34,7 @@ contract Collection is
         _installEngine(engine);
     }
 
-    function _installEngine(IEngine engine) internal {
+    function _installEngine(IEngine engine) private {
         require(
             engine.supportsInterface(type(IEngine).interfaceId),
             "shell: invalid engine"
@@ -73,87 +44,7 @@ contract Collection is
     }
 
     // ---
-    // Engine functionality
-    // ---
-
-    function mint(address to, MintOptions calldata options)
-        external
-        returns (uint256)
-    {
-        require(_msgSender() == address(installedEngine), "shell: not engine");
-
-        uint256 tokenId = nextTokenId++;
-        _mint(to, tokenId);
-
-        // write engine-provided immutable data
-
-        for (uint256 i = 0; i < options.stringData.length; i++) {
-            _writeString(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                options.stringData[i].key,
-                options.stringData[i].value
-            );
-        }
-
-        for (uint256 i = 0; i < options.intData.length; i++) {
-            _writeInt(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                options.intData[i].key,
-                options.intData[i].value
-            );
-        }
-
-        // write framework immutable data
-
-        if (options.storeEngine) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "engine",
-                uint256(uint160(address(installedEngine)))
-            );
-        }
-        if (options.storeMintedBy) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "mintedBy",
-                uint256(uint160(address(_msgSender())))
-            );
-        }
-        if (options.storeMintedTo) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "mintedTo",
-                uint256(uint160(address(to)))
-            );
-        }
-        if (options.storeTimestamp) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "timestamp",
-                // solhint-disable-next-line not-rely-on-time
-                block.timestamp
-            );
-        }
-        if (options.storeBlockNumber) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "blockNumber",
-                block.number
-            );
-        }
-
-        return tokenId;
-    }
-
-    // ---
-    // Storage write controller
+    // Storage write controller (for engine)
     // ---
 
     function writeString(
@@ -171,7 +62,7 @@ contract Collection is
         string calldata key,
         string calldata value
     ) external {
-        _validateWrite(location, tokenId);
+        _validateWrite(location);
         _writeString(location, tokenId, key, value);
     }
 
@@ -190,35 +81,16 @@ contract Collection is
         string calldata key,
         uint256 value
     ) external {
-        _validateWrite(location, tokenId);
+        _validateWrite(location);
         _writeInt(location, tokenId, key, value);
     }
 
     function _validateWrite(StorageLocation location) private view {
-        if (location == StorageLocation.ENGINE) {
-            require(
-                _msgSender() == address(installedEngine),
-                "shell: not engine"
-            );
-        } else {
-            revert("shell: invalid write");
-        }
-    }
-
-    function _validateWrite(StorageLocation location, uint256 tokenId)
-        private
-        view
-    {
-        if (location == StorageLocation.OWNER) {
-            require(_msgSender() == ownerOf(tokenId), "shell: not nft owner");
-        } else if (location == StorageLocation.ENGINE) {
-            require(
-                _msgSender() == address(installedEngine),
-                "shell: not engine"
-            );
-        } else {
-            revert("shell: invalid write");
-        }
+        require(msg.sender == address(installedEngine), "shell: not engine");
+        require(
+            location == StorageLocation.ENGINE,
+            "shell: invalid storage location"
+        );
     }
 
     // ---
@@ -290,7 +162,7 @@ contract Collection is
         string calldata topic,
         string calldata value
     ) external {
-        _validatePublish(channel, tokenId);
+        _validatePublish(channel);
         emit TokenStringPublished(channel, tokenId, topic, value);
     }
 
@@ -309,37 +181,20 @@ contract Collection is
         string calldata topic,
         uint256 value
     ) external {
-        _validatePublish(channel, tokenId);
+        _validatePublish(channel);
         emit TokenIntPublished(channel, tokenId, topic, value);
     }
 
     function _validatePublish(PublishChannel channel) private view {
         if (channel == PublishChannel.PUBLIC) {
             return;
-        } else if (channel == PublishChannel.OWNER) {
-            require(balanceOf(_msgSender()) > 0, "shell: no owned nfts");
         } else if (channel == PublishChannel.ENGINE) {
             require(
-                _msgSender() == address(installedEngine),
+                msg.sender == address(installedEngine),
                 "shell: not engine"
             );
         }
-    }
-
-    function _validatePublish(PublishChannel channel, uint256 tokenId)
-        private
-        view
-    {
-        if (channel == PublishChannel.PUBLIC) {
-            return;
-        } else if (channel == PublishChannel.OWNER) {
-            require(ownerOf(tokenId) == _msgSender(), "shell: not nft owner");
-        } else if (channel == PublishChannel.ENGINE) {
-            require(
-                _msgSender() == address(installedEngine),
-                "shell: not engine"
-            );
-        }
+        revert("shell: invalid publish");
     }
 
     // ---
@@ -390,15 +245,6 @@ contract Collection is
     // Views powered by current engine
     // ---
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
-        return installedEngine.getTokenURI(this, tokenId);
-    }
-
     function royaltyInfo(uint256 tokenId, uint256 salePrice)
         external
         view
@@ -415,29 +261,13 @@ contract Collection is
         public
         view
         virtual
-        override(ERC721Upgradeable, IERC165)
+        override
         returns (bool)
     {
         return
-            ERC721Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == type(IShellFramework).interfaceId ||
             interfaceId == type(IERC2981).interfaceId ||
             interfaceId == type(IERC165).interfaceId;
     }
 
-    // ---
-    // Open Zeppelin ERC721 hook
-    // ---
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override {
-        try installedEngine.beforeTokenTransfer(this, from, to, tokenId) {
-            return;
-        } catch {
-            // engine reverted, but we don't want to block the transfer
-            return;
-        }
-    }
 }

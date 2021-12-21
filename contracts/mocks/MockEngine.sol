@@ -2,17 +2,24 @@
 pragma solidity ^0.8.0;
 
 import "../IEngine.sol";
-import "../ICollection.sol";
+import "../IShellERC721.sol";
+import "../IShellFramework.sol";
+import "../engines/BeforeTokenTransferNopEngine.sol";
+import "../engines/NoRoyaltiesEngine.sol";
 
 // Simple engine with a few conventions:
-contract MockEngine is IEngine {
+contract MockEngine is
+    IEngine,
+    NoRoyaltiesEngine,
+    BeforeTokenTransferNopEngine
+{
     string public baseUri;
 
-    function name() external pure returns (string memory) {
+    function getEngineName() external pure returns (string memory) {
         return "MockEngine";
     }
 
-    function getTokenURI(ICollection collection, uint256 tokenId)
+    function getTokenURI(IShellFramework collection, uint256 tokenId)
         external
         view
         override
@@ -26,30 +33,7 @@ contract MockEngine is IEngine {
         return string(abi.encodePacked("ipfs://ipfs/", ipfsHash));
     }
 
-    function getRoyaltyInfo(
-        ICollection collection,
-        uint256,
-        uint256 salePrice
-    ) external view override returns (address receiver, uint256 royaltyAmount) {
-        uint256 bps = collection.readInt(StorageLocation.ENGINE, "royaltyBps");
-        receiver = address(
-            uint160(
-                collection.readInt(StorageLocation.ENGINE, "royaltyReceiver")
-            )
-        );
-        royaltyAmount = (salePrice * bps) / 10000;
-    }
-
-    function beforeTokenTransfer(
-        ICollection,
-        address,
-        address,
-        uint256
-    ) external pure override {
-        return; // no-op
-    }
-
-    function mint(ICollection collection, string calldata ipfsHash)
+    function mint(IShellERC721 collection, string calldata ipfsHash)
         external
         returns (uint256)
     {
@@ -63,7 +47,6 @@ contract MockEngine is IEngine {
             MintOptions({
                 storeEngine: false,
                 storeMintedTo: false,
-                storeMintedBy: false,
                 storeTimestamp: false,
                 storeBlockNumber: false,
                 stringData: stringData,
@@ -72,6 +55,13 @@ contract MockEngine is IEngine {
         );
 
         return tokenId;
+    }
+
+    function afterInstallEngine(IShellFramework collection) external view {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId),
+            "must implement IShellERC721"
+        );
     }
 
     function supportsInterface(bytes4 interfaceId)

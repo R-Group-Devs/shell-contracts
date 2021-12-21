@@ -2,9 +2,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
-  Collection,
-  CollectionFactory,
-  Collection__factory,
+  ShellFactory,
+  ShellERC721,
+  ShellERC721__factory,
   MockEngine,
 } from "../typechain";
 
@@ -13,20 +13,18 @@ describe("CollectionFactory", function () {
   // fixtures
   // ---
 
-  let Collection: Collection__factory;
-  let factory: CollectionFactory;
+  let Collection: ShellERC721__factory;
+  let factory: ShellFactory;
   let mockEngine: MockEngine;
   let accounts: SignerWithAddress[];
   let a0: string, a1: string, a2: string, a3: string;
 
   beforeEach(async () => {
-    Collection = await ethers.getContractFactory("Collection");
-    const CollectionFactory = await ethers.getContractFactory(
-      "CollectionFactory"
-    );
+    Collection = await ethers.getContractFactory("ShellERC721");
+    const ShellFactory = await ethers.getContractFactory("ShellFactory");
     const MockEngine = await ethers.getContractFactory("MockEngine");
     [factory, mockEngine, accounts] = await Promise.all([
-      CollectionFactory.deploy(),
+      ShellFactory.deploy(),
       MockEngine.deploy(),
       ethers.getSigners(),
     ]);
@@ -39,7 +37,7 @@ describe("CollectionFactory", function () {
     symbol = "TEST",
     engine = mockEngine.address,
     owner = a0
-  ): Promise<Collection> => {
+  ): Promise<ShellERC721> => {
     const trx = await factory.createCollection(name, symbol, engine, owner);
     const mined = await trx.wait();
     const address = mined.events?.[2].args?.collection;
