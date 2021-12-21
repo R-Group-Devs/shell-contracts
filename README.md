@@ -34,6 +34,12 @@ Run unit tests and report coverage:
 yarn test:coverage
 ```
 
+If you have `shell-subgraph` and `shell-frontend` repos as sibling directories to this one, you can copy built ABIs to the appropriate location in those repos:
+
+```
+./copy-pasta-abis.sh
+```
+
 ## Architecture
 
 <p align="center">
@@ -46,9 +52,9 @@ yarn test:coverage
 * The engine will be invoked before each NFT transfer/mint/burn (`beforeTokenTransfer`)
 * The engine implements minting logic. Immutable data associated with the token can be written on mint by the engine
 * The engine may store data (associated with either with the collection or a specific token) within the shell protocol. Stored data persists across engine hot-swaps
-* Trustable data can be requested to be written to token storage on mint by the framework (such as minter, block height, etc). 
+* Trustable data can be requested to be written to token storage on mint by the framework (such as minter, block height, etc).
 * Engines and NFT owners cannot modify framework data
-* Token owners may write any data they wish to tokens. Engines cannot modify this data 
+* Token owners may write any data they wish to tokens. Engines cannot modify this data
 
 ## Deployment
 
