@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "../libraries/Base64.sol";
-import "../libraries/HexStrings.sol";
 import "../IEngine.sol";
-import "../ICollection.sol";
+import "../IShellFramework.sol";
+import "../IShellERC721.sol";
 import "../engines/BeforeTokenTransferNopEngine.sol";
 import "../engines/NoRoyaltiesEngine.sol";
 import "../engines/OnChainMetadataEngine.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract RGroupPlaceholder is
     IEngine,
@@ -19,12 +19,12 @@ contract RGroupPlaceholder is
 {
     using Strings for uint256;
 
-    function name() external pure returns (string memory) {
+    function getEngineName() external pure returns (string memory) {
         return "R Group Membership";
     }
 
     function mint(
-        ICollection collection,
+        IShellERC721 collection,
         string calldata name_,
         string calldata bio
     ) external returns (uint256) {
@@ -36,7 +36,6 @@ contract RGroupPlaceholder is
             MintOptions({
                 storeEngine: true,
                 storeMintedTo: true,
-                storeMintedBy: true,
                 storeTimestamp: true,
                 storeBlockNumber: true,
                 stringData: stringData,
@@ -50,7 +49,7 @@ contract RGroupPlaceholder is
     }
 
     function updateInfo(
-        ICollection collection,
+        IShellFramework collection,
         uint256 tokenId,
         string calldata name_,
         string calldata bio
@@ -59,17 +58,21 @@ contract RGroupPlaceholder is
         collection.writeString(StorageLocation.ENGINE, tokenId, "bio", bio);
     }
 
-    function _computeName(ICollection nft, uint256 tokenId)
+    function _computeName(IShellFramework nft, uint256 tokenId)
         internal
         view
         override
         returns (string memory)
     {
-        string memory name_ = nft.readString(StorageLocation.ENGINE, tokenId, "name");
+        string memory name_ = nft.readString(
+            StorageLocation.ENGINE,
+            tokenId,
+            "name"
+        );
         return string(abi.encodePacked("R Group: ", name_));
     }
 
-    function _computeDescription(ICollection nft, uint256 tokenId)
+    function _computeDescription(IShellFramework nft, uint256 tokenId)
         internal
         view
         override
@@ -90,11 +93,6 @@ contract RGroupPlaceholder is
             tokenId,
             "mintedTo"
         );
-        uint256 mintedBy = nft.readInt(
-            StorageLocation.FRAMEWORK,
-            tokenId,
-            "mintedBy"
-        );
         uint256 timestamp = nft.readInt(
             StorageLocation.FRAMEWORK,
             tokenId,
@@ -109,10 +107,8 @@ contract RGroupPlaceholder is
                     " \\n\\n",
                     bio,
                     " \\n\\nThis membership NFT is only valid if held by ",
-                    HexStrings.toHexString(mintedTo, 20),
-                    " \\n\\nOriginally minted by ",
-                    HexStrings.toHexString(mintedBy, 20),
-                    " at timestamp ",
+                    mintedTo.toHexString(20),
+                    " \\n\\nMinted at timestamp ",
                     timestamp.toString(),
                     ".\\n\\n Token ID #",
                     tokenId.toString(),
@@ -121,7 +117,7 @@ contract RGroupPlaceholder is
             );
     }
 
-    function _computeImageUri(ICollection, uint256)
+    function _computeImageUri(IShellFramework, uint256)
         internal
         pure
         override
@@ -131,7 +127,7 @@ contract RGroupPlaceholder is
             "https://ipfs.hypervibes.xyz/ipfs/QmXuSWsCCEmNcuugzoNrFBYYCtQoJjKM4qyoeyvbVa8z4Z";
     }
 
-    function _computeExternalUrl(ICollection, uint256)
+    function _computeExternalUrl(IShellFramework, uint256)
         internal
         pure
         override
@@ -148,5 +144,12 @@ contract RGroupPlaceholder is
         returns (bool)
     {
         return interfaceId == type(IEngine).interfaceId;
+    }
+
+    function afterInstallEngine(IShellFramework collection) external view {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId),
+            "must implement IShellERC721"
+        );
     }
 }

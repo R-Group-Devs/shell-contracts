@@ -15,8 +15,8 @@
     "verify": "hardhat verify"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "4.4.0",
-    "@openzeppelin/contracts-upgradeable": "4.4.0"
+    "@openzeppelin/contracts": "4.4.1",
+    "@openzeppelin/contracts-upgradeable": "4.4.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "2.0.3",

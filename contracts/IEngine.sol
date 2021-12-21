@@ -2,33 +2,42 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "./ICollection.sol";
+import "./IShellFramework.sol";
 
 // Required interface for framework engines
+// must return true for supportsInterface(0x0cfec183)
 interface IEngine is IERC165 {
-    // display name for this engine
-    function name() external pure returns (string memory);
+    // Get the name for this engine
+    function getEngineName() external pure returns (string memory);
 
-    // Called by the collection to resolve a response for tokenURI
-    function getTokenURI(ICollection collection, uint256 tokenId)
+    // Called by the framework to resolve a response for tokenURI method
+    function getTokenURI(IShellFramework collection, uint256 tokenId)
         external
         view
         returns (string memory);
 
-    // Called by the collection to response a response for royaltyInfo
+    // Called by the framework to resolve a response for royaltyInfo method
     function getRoyaltyInfo(
-        ICollection collection,
+        IShellFramework collection,
         uint256 tokenId,
         uint256 salePrice
     ) external view returns (address receiver, uint256 royaltyAmount);
 
-    // Called by the collection during a transfer, including mints (from=0) and
+    // Called by the framework during a transfer, including mints (from=0) and
     // burns (to=0). Cannot break transfer even in the case of reverting, as the
     // collection will wrap the downstream call in a try/catch
+    // The engine MUST assert msg.sender == collection address!!
     function beforeTokenTransfer(
-        ICollection collection,
+        IShellFramework collection,
+        address operator,
         address from,
         address to,
-        uint256 tokenId
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
     ) external;
+
+    // Called by the framework following an engine install. Can be used by the
+    // engine to block (by reverting) installation if needed.
+    // The engine MUST assert msg.sender == collection address!!
+    function afterInstallEngine(IShellFramework collection) external;
 }
