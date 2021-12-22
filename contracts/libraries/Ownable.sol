@@ -15,6 +15,10 @@ import "./IOwnable.sol";
 contract Ownable is IOwnable {
     address private _owner;
 
+    constructor() {
+        _transferOwnership(msg.sender);
+    }
+
     function owner() public view virtual returns (address) {
         return _owner;
     }

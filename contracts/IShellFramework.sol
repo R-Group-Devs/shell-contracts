@@ -128,6 +128,18 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     );
 
     // ---
+    // Collection base
+    // ---
+
+    // called immediately after cloning
+    function initialize(
+        string calldata name,
+        string calldata symbol,
+        IEngine engine,
+        address owner
+    ) external;
+
+    // ---
     // General collection info / metadata
     // ---
 
