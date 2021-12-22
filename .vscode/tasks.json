@@ -2,21 +2,21 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "⚡️ deploy contracts",
+      "label": "⚡️ deploy contract",
       "type": "shell",
-      "command": "yarn deploy --network ${input:network}",
+      "command": "yarn deploy --network ${input:network} --contract ${input:contract}",
+      "problemMatcher": []
+    },
+    {
+      "label": "⚡️ deploy implementation",
+      "type": "shell",
+      "command": "yarn deploy:implementation --network ${input:network} --contract ${input:contract} --implementation ${input:implementation}",
       "problemMatcher": []
     },
     {
       "label": "🧪 deploy debug fixtures",
       "type": "shell",
       "command": "yarn deploy:fixtures --network ${input:network}",
-      "problemMatcher": []
-    },
-    {
-      "label": "✅ verify contract",
-      "type": "shell",
-      "command": "yarn verify --network ${input:network} ${input:contract}",
       "problemMatcher": []
     }
   ],
@@ -29,7 +29,12 @@
     },
     {
       "id": "contract",
-      "description": "contract address",
+      "description": "contract name (eg ShellFactory)",
+      "type": "promptString"
+    },
+    {
+      "id": "implementation",
+      "description": "implementaiton name (eg shell-erc721-v1)",
       "type": "promptString"
     },
   ]

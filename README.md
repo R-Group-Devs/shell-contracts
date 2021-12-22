@@ -60,17 +60,21 @@ If you have `shell-subgraph` and `shell-frontend` repos as sibling directories t
 
 Copy `.env.example` to `.env` and override the default values before deploying.
 
-Deploy the contract:
+Deploy a contract (eg, ShellFactory):
 
 ```
-yarn deploy --network rinkeby
+yarn deploy --network rinkeby --contract ShellFactory
 ```
 
-This will output the deployed contract address in the console.
+This will output the deployed contract address in the console and update the `./tasks/deployments.json` file.
+
+> NOTE: The contract will automatically be verified on etherscan
 
 ### Verification
 
-Verify on Etherscan, using the contract address from the previous step.
+The `deploy` task will automatically verify contracts generally.
+
+This can occasionally fail. If it does, verify manually:
 
 ```
 yarn verify --network rinkeby $CONTRACT_ADDRESS
@@ -94,12 +98,4 @@ If you are verifying for the `fantom` network, set the `FANTOM` env var:
 
 ```
 FANTOM=1 yarn verify --network fantom $CONTRACT_ADDRESS
-```
-
-### Test Fixtures
-
-To deploy test fixtures and contracts (can help with testing):
-
-```
-yarn deploy:fixtures --network rinkeby
 ```
