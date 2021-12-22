@@ -12,6 +12,7 @@
     "build": "hardhat compile",
     "deploy": "hardhat deploy",
     "deploy:implementation": "hardhat deploy:implementation",
+    "register": "hardhat register",
     "verify": "hardhat verify"
   },
   "dependencies": {

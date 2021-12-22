@@ -59,6 +59,27 @@ task("deploy", "Deploy a contract")
     return address;
   });
 
+task("register", "Register a shell implementation contract")
+  .addParam<string>("address", "Deployed contract address")
+  .addParam<string>(
+    "implementation",
+    "Name to use during implementation registration"
+  )
+  .setAction(async ({ address, implementation }, { ethers, run, network }) => {
+    const ShellFactory = await ethers.getContractFactory("ShellFactory");
+    const entry = (await readDeploymentsFile())[network.name];
+    if (!entry) {
+      throw new Error(`no deployment entry for network: ${network.name}`);
+    }
+    const factory = ShellFactory.attach(entry.address);
+
+    console.log("registering implementation with factory...");
+    const trx = await factory.registerImplementation(implementation, address);
+    await trx.wait();
+
+    console.log(`${implementation} registered with ShellFactory`);
+  });
+
 task(
   "deploy:implementation",
   "Deploy and register a shell implementation contract"
@@ -74,10 +95,10 @@ task(
     if (!entry) {
       throw new Error(`no deployment entry for network: ${network.name}`);
     }
-
-    console.log("registering implementation with factory...");
     const ShellFactory = await ethers.getContractFactory("ShellFactory");
     const factory = ShellFactory.attach(entry.address);
+
+    console.log("registering implementation with factory...");
     const trx = await factory.registerImplementation(implementation, address);
     await trx.wait();
 

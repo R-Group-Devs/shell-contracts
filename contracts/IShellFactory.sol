@@ -10,7 +10,10 @@ interface IShellFactory is IOwnable {
     event ImplementationRegistered(string name, IShellFramework implementation);
 
     // new clone launched
-    event CollectionCreated(IShellFramework collection);
+    event CollectionCreated(
+        IShellFramework collection,
+        IShellFramework implememtation
+    );
 
     // register a new collection implementation
     function registerImplementation(

@@ -44,7 +44,7 @@ contract ShellFactory is IShellFactory, Ownable {
             Clones.clone(address(implementation))
         );
         clone.initialize(name, symbol, engine, owner);
-        emit CollectionCreated(clone);
+        emit CollectionCreated(clone, implementation);
         return clone;
     }
 }
