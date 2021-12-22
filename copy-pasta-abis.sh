@@ -1,10 +1,20 @@
 #!/bin/bash
 
-yarn build
-cp ./artifacts/contracts/IEngine.sol/IEngine.json ../shell-subgraph/abis/
-cp ./artifacts/contracts/IShellFramework.sol/IShellFramework.json ../shell-subgraph/abis/
-cp ./artifacts/contracts/IShellERC721.sol/IShellERC721.json ../shell-subgraph/abis/
-cp ./artifacts/contracts/ShellFactory.sol/ShellFactory.json ../shell-subgraph/abis/
+# script to copy ABIs from this repo to sibling repos (subgraph and frontend)
 
-cp ./artifacts/contracts/IEngine.sol/IEngine.json ../shell-frontend/src/shell/abis
-cp ./artifacts/contracts/ShellFactory.sol/ShellFactory.json ../shell-frontend/src/shell/abis/
+BASE=./artifacts/contracts
+GRAPH=../shell-subgraph/abis/
+FRONTEND=../shell-frontend/src/shell/abis/
+
+yarn build \
+  && cp \
+    $BASE/IEngine.sol/IEngine.json \
+    $BASE/IShellFramework.sol/IShellFramework.json \
+    $BASE/IShellERC721.sol/IShellERC721.json \
+    $BASE/IShellFactory.sol/IShellFactory.json \
+    $BASE/ShellFactory.sol/ShellFactory.json \
+      $GRAPH \
+  && cp \
+    $BASE/IEngine.sol/IEngine.json \
+    $BASE/IShellFramework.sol/IShellFramework.json \
+      $FRONTEND
