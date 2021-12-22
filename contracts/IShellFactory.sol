@@ -12,7 +12,7 @@ interface IShellFactory is IOwnable {
     // new clone launched
     event CollectionCreated(
         IShellFramework collection,
-        IShellFramework implememtation
+        IShellFramework implementation
     );
 
     // register a new collection implementation

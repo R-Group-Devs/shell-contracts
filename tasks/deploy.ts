@@ -26,7 +26,7 @@ const readDeploymentsFile = async (): Promise<DeploymentsFile> => {
 task("deploy", "Deploy a contract")
   .addParam<string>("contract", "Contract to deploy")
   .setAction(async ({ contract }, { ethers, run, network }) => {
-    console.log("compiling all contracts...");
+    console.log("compiling all contracts ...");
     await run("compile");
 
     const ContractFactory = await ethers.getContractFactory(contract);
@@ -41,13 +41,13 @@ task("deploy", "Deploy a contract")
     console.log("---\n\n");
 
     if (contract === "ShellFactory") {
-      console.log("updating factory-deployments.json...");
+      console.log("updating factory-deployments.json ...");
       const entries = await readDeploymentsFile();
       entries[network.name] = { address };
       await writeDeploymentsFile(entries);
     }
 
-    console.log("waiting 60 seconds before attempting to verify...");
+    console.log("waiting 60 seconds before attempting to verify ...");
     await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
     console.log("verifying...");
@@ -73,7 +73,7 @@ task("register", "Register a shell implementation contract")
     }
     const factory = ShellFactory.attach(entry.address);
 
-    console.log("registering implementation with factory...");
+    console.log("registering implementation with factory ...");
     const trx = await factory.registerImplementation(implementation, address);
     await trx.wait();
 
@@ -91,16 +91,5 @@ task(
   )
   .setAction(async ({ contract, implementation }, { ethers, run, network }) => {
     const address: string = await run("deploy", { contract });
-    const entry = (await readDeploymentsFile())[network.name];
-    if (!entry) {
-      throw new Error(`no deployment entry for network: ${network.name}`);
-    }
-    const ShellFactory = await ethers.getContractFactory("ShellFactory");
-    const factory = ShellFactory.attach(entry.address);
-
-    console.log("registering implementation with factory...");
-    const trx = await factory.registerImplementation(implementation, address);
-    await trx.wait();
-
-    console.log(`${implementation} registered with ShellFactory`);
+    await run("register", { address, implementation });
   });
