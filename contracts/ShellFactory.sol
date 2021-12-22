@@ -8,6 +8,10 @@ import "./IShellFactory.sol";
 contract ShellFactory is IShellFactory, Ownable {
     mapping(string => IShellFramework) public implementations;
 
+    constructor() {
+        _transferOwnership(msg.sender);
+    }
+
     function registerImplementation(
         string calldata name,
         IShellFramework implementation
@@ -15,6 +19,10 @@ contract ShellFactory is IShellFactory, Ownable {
         require(
             implementations[name] == IShellFramework(address(0)),
             "shell: implementation exists"
+        );
+        require(
+            implementation.supportsInterface(type(IShellFramework).interfaceId),
+            "shell: invalid implementation"
         );
         implementations[name] = implementation;
         emit ImplementationRegistered(name, implementation);

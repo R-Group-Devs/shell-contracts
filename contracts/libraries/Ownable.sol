@@ -10,14 +10,14 @@ import "./IOwnable.sol";
 
     https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
 
+    with some changes:
+    - dont use _msgSender()
+    - dont auto-init msg.sender as owner in constructor
+
 */
 
 contract Ownable is IOwnable {
     address private _owner;
-
-    constructor() {
-        _transferOwnership(msg.sender);
-    }
 
     function owner() public view virtual returns (address) {
         return _owner;
