@@ -152,4 +152,14 @@ contract RGroupPlaceholder is
             "must implement IShellERC721"
         );
     }
+
+    function afterInstallEngine(IShellFramework collection, uint256)
+        external
+        view
+    {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId),
+            "must implement IShellERC721"
+        );
+    }
 }

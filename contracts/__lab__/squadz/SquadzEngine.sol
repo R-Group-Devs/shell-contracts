@@ -45,6 +45,10 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return;
     }
 
+    function afterInstallEngine(IShellFramework, uint256) external pure {
+        revert("cannot override engine");
+    }
+
     // Get the name for this engine
     function getEngineName() external pure returns (string memory) {
         return "SQUADZ v0.0.0";
@@ -65,8 +69,8 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         }
         if (address(descriptor) == address(0)) descriptor = defaultDescriptor;
         return descriptor.getTokenURI(
-            address(collection), 
-            tokenId, 
+            address(collection),
+            tokenId,
             token.ownerOf(tokenId)
         );
     }
@@ -94,7 +98,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     function setDescriptor(IShellERC721 collection, address descriptorAddress, bool admin) external {
         require(
-            collection.owner() == msg.sender, 
+            collection.owner() == msg.sender,
             "SQUADZ: sender not collection owner"
         );
         _setDescriptorAddress(collection, descriptorAddress, admin);
@@ -135,7 +139,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     function isAdminToken(IShellERC721 collection, uint256 tokenId) public view returns (bool) {
         require(
-            collection.ownerOf(tokenId) != address(0), 
+            collection.ownerOf(tokenId) != address(0),
             "SQUADZ: token doesn't exist"
         );
         return collection.readInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
@@ -197,14 +201,14 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         );
         if (admin == true) {
             collection.writeInt(
-                StorageLocation.ENGINE, 
-                _adminDescriptorKey(), 
+                StorageLocation.ENGINE,
+                _adminDescriptorKey(),
                 uint256(uint160(descriptorAddress))
             );
         } else {
             collection.writeInt(
-                StorageLocation.ENGINE, 
-                _memberDescriptorKey(), 
+                StorageLocation.ENGINE,
+                _memberDescriptorKey(),
                 uint256(uint160(descriptorAddress))
             );
         }
@@ -215,14 +219,14 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         if (admin == true) {
             descriptor = IPersonalizedDescriptor(address(uint160(
                 collection.readInt(
-                    StorageLocation.ENGINE, 
+                    StorageLocation.ENGINE,
                     _adminDescriptorKey()
                 )
             )));
         } else {
             descriptor = IPersonalizedDescriptor(address(uint160(
                 collection.readInt(
-                    StorageLocation.ENGINE, 
+                    StorageLocation.ENGINE,
                     _memberDescriptorKey()
                 )
             )));

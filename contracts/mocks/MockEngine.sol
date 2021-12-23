@@ -8,11 +8,7 @@ import "../engines/BeforeTokenTransferNopEngine.sol";
 import "../engines/NoRoyaltiesEngine.sol";
 
 // Simple engine with a few conventions:
-contract MockEngine is
-    IEngine,
-    NoRoyaltiesEngine,
-    BeforeTokenTransferNopEngine
-{
+contract MockEngine is IEngine, NoRoyaltiesEngine, BeforeTokenTransferNopEngine {
     string public baseUri;
 
     function getEngineName() external pure returns (string memory) {
@@ -31,6 +27,23 @@ contract MockEngine is
             "ipfsHash"
         );
         return string(abi.encodePacked("ipfs://ipfs/", ipfsHash));
+    }
+
+    function writeIntToToken(
+        IShellERC721 collection,
+        uint256 tokenId,
+        string calldata key,
+        uint256 value
+    ) external {
+        collection.writeInt(StorageLocation.ENGINE, tokenId, key, value);
+    }
+
+    function writeIntToCollection(
+        IShellERC721 collection,
+        string calldata key,
+        uint256 value
+    ) external {
+        collection.writeInt(StorageLocation.ENGINE, key, value);
     }
 
     function mint(IShellERC721 collection, string calldata ipfsHash)
@@ -57,7 +70,22 @@ contract MockEngine is
         return tokenId;
     }
 
-    function afterInstallEngine(IShellFramework collection) external view {
+    function afterInstallEngine(IShellFramework collection)
+        external
+        view
+        override(IEngine)
+    {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId),
+            "must implement IShellERC721"
+        );
+    }
+
+     function afterInstallEngine(IShellFramework collection, uint256)
+        external
+        view
+        override(IEngine)
+    {
         require(
             collection.supportsInterface(type(IShellERC721).interfaceId),
             "must implement IShellERC721"

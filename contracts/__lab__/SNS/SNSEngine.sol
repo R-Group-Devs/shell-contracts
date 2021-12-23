@@ -20,22 +20,22 @@ import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
  *
  * A simple name system that partially matches the Ethereum Name System's interfaces without implementing the entire system.
  * Simply lets each address claim one name at a time.
- * Intended to be used to let NFTs display user names on Squadz pages on networks where ENS is unavailable (i.e. not mainnet). 
+ * Intended to be used to let NFTs display user names on Squadz pages on networks where ENS is unavailable (i.e. not mainnet).
  * Matches the same pattern for reverse name look up for ENS.
- * 
+ *
  * Process to look up a name from an address:
  *   bytes32 node = ReverseRegistrarLike(reverseRegistrarAddr).node(address);
  *   address resolverAddr = RegistrarLike(registrarAddr)resolver(node);
  *   string name = NameResolverLike(resolverAddr).name(node);
- * 
+ *
  * Or call getNames(address[]) in ReverseRecords.sol, which does this for you
- * 
+ *
  * For SNS, all replicated interfaces are on the main SNS address. With ENS, this is not the case.
  */
 
-contract SNS is 
-    NameResolverLike, 
-    RegistrarLike, 
+contract SNS is
+    NameResolverLike,
+    RegistrarLike,
     ReverseRegistrarLike,
     ReverseRecordsLike
 {
@@ -107,7 +107,11 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
         _setSNS(collection, snsAddr);
         // start with a price too expensive to buy so the owner can do a "fair release" at a lower price and later time
         setPrice(collection, MAX_INT);
-    } 
+    }
+
+    function afterInstallEngine(IShellFramework, uint256) external pure {
+        revert("cannot override engine");
+    }
 
     function mintAndSet(IShellERC721 collection, string calldata name_) external payable returns (uint256) {
         uint256 tokenId = mint(collection, name_);
