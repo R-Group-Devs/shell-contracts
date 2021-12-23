@@ -80,7 +80,31 @@ describe("CollectionFactory", function () {
   });
 
   describe("creation collection", async () => {
-    it("should revert if launching a collection with an invalid name", async () => {});
+    it("should revert if launching a collection with an invalid name", async () => {
+      expect(
+        factory.createCollection(
+          "name",
+          "symbol",
+          "invalid name",
+          mockEngine.address,
+          a0
+        )
+      ).to.be.revertedWith("shell: implementation not found");
+    });
+    it("should emit CollectionCreated when launching a collection", async () => {
+      const trx = await factory.createCollection(
+        "name",
+        "symbol",
+        "erc721",
+        mockEngine.address,
+        a0
+      );
+      const mined = await trx.wait();
+      const address = mined.events?.[2].args?.collection;
+      const implementation = mined.events?.[2].args?.implementation;
+      expect(address).to.match(/^0x/); //
+      expect(implementation).to.equal(erc721.address);
+    });
   });
 
   describe("basics", () => {
