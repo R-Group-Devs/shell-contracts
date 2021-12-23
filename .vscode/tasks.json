@@ -12,12 +12,6 @@
       "type": "shell",
       "command": "yarn deploy:implementation --network ${input:network} --contract ${input:contract} --implementation ${input:implementation}",
       "problemMatcher": []
-    },
-    {
-      "label": "🧪 deploy debug fixtures",
-      "type": "shell",
-      "command": "yarn deploy:fixtures --network ${input:network}",
-      "problemMatcher": []
     }
   ],
   "inputs": [
