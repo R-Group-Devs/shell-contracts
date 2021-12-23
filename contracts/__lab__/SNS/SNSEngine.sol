@@ -110,7 +110,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function afterInstallEngine(IShellFramework, uint256) external pure {
-        revert("cannot override engine");
+        revert("cannot install engine");
     }
 
     function mintAndSet(IShellERC721 collection, string calldata name_) external payable returns (uint256) {

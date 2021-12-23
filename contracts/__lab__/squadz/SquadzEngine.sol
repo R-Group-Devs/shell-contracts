@@ -46,7 +46,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     }
 
     function afterInstallEngine(IShellFramework, uint256) external pure {
-        revert("cannot override engine");
+        revert("cannot install engine");
     }
 
     // Get the name for this engine
