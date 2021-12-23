@@ -8,7 +8,7 @@ import {
   ShellERC721__factory,
 } from "../typechain";
 
-describe("CollectionFactory", function () {
+describe("ShellFactory", function () {
   // ---
   // fixtures
   // ---
@@ -30,7 +30,6 @@ describe("CollectionFactory", function () {
       MockEngine.deploy(),
       ethers.getSigners(),
     ]);
-    // give infinite allowance for a0 to hv
     [a0, a1, a2, a3] = accounts.map((a) => a.address);
     await factory.registerImplementation("erc721", erc721.address);
   });
@@ -105,18 +104,10 @@ describe("CollectionFactory", function () {
       expect(address).to.match(/^0x/); //
       expect(implementation).to.equal(erc721.address);
     });
-  });
-
-  describe("basics", () => {
     it("should deploy new collections", async () => {
       const collection = await createCollection();
       expect(await collection.name()).to.equal("Test");
       expect(await collection.symbol()).to.equal("TEST");
-    });
-    it("should delegate tokenURI resolution to engine", async () => {
-      const collection = await createCollection();
-      await mockEngine.mint(collection.address, "Qhash");
-      expect(await collection.tokenURI("1")).to.equal("ipfs://ipfs/Qhash");
     });
   });
 });
