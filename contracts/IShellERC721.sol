@@ -6,8 +6,6 @@ import "./IShellFramework.sol";
 
 // All shell erc721s must implement this interface
 interface IShellERC721 is IShellFramework, IERC721Upgradeable {
-    // token id serial number
-    function nextTokenId() external view returns (uint256);
 
     // Mint a new token. Only callable by engine
     function mint(address to, MintOptions calldata options)

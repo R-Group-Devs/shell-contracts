@@ -59,6 +59,9 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // A new engine was installed
     event EngineInstalled(IEngine engine);
 
+    // A new engine was installed for a token
+    event EngineInstalledForToken(uint256 tokenId, IEngine engine);
+
     // ---
     // Storage events
     // ---
@@ -148,6 +151,16 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
 
     // collection name
     function symbol() external view returns (string memory);
+
+    // next token id serial number
+    function nextTokenId() external view returns (uint256);
+
+    // ---
+    // NFT owner functionaltiy
+    // ---
+
+    // override a token's engine. Only callable by NFT owner
+    function installEngineForToken(uint256 tokenId, IEngine engine) external;
 
     // ---
     // Collection owner (admin) functionaltiy

@@ -36,8 +36,13 @@ interface IEngine is IERC165 {
         uint256[] memory amounts
     ) external;
 
-    // Called by the framework following an engine install. Can be used by the
-    // engine to block (by reverting) installation if needed.
+    // Called by the framework following an engine install to a collection. Can
+    // be used by the engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
     function afterInstallEngine(IShellFramework collection) external;
+
+    // Called by the framework following an engine install to specific token.
+    // Can be used by the engine to block (by reverting) installation if needed.
+    // The engine MUST assert msg.sender == collection address!!
+    function afterInstallEngine(IShellFramework collection, uint256 tokenId) external;
 }

@@ -59,6 +59,15 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     }
 
     // ---
+    // NFT owner functionality
+    // ---
+
+    function installEngineForToken(uint256 tokenId, IEngine engine) external {
+        require(msg.sender == ownerOf(tokenId), "shell: not nft owner");
+        _installEngineForToken(tokenId, engine);
+    }
+
+    // ---
     // Engine functionality
     // ---
 
@@ -70,62 +79,7 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
 
         uint256 tokenId = nextTokenId++;
         _mint(to, tokenId);
-
-        // write engine-provided immutable data
-
-        for (uint256 i = 0; i < options.stringData.length; i++) {
-            _writeString(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                options.stringData[i].key,
-                options.stringData[i].value
-            );
-        }
-
-        for (uint256 i = 0; i < options.intData.length; i++) {
-            _writeInt(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                options.intData[i].key,
-                options.intData[i].value
-            );
-        }
-
-        // write framework immutable data
-
-        if (options.storeEngine) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "engine",
-                uint256(uint160(address(installedEngine)))
-            );
-        }
-        if (options.storeMintedTo) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "mintedTo",
-                uint256(uint160(address(to)))
-            );
-        }
-        if (options.storeTimestamp) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "timestamp",
-                // solhint-disable-next-line not-rely-on-time
-                block.timestamp
-            );
-        }
-        if (options.storeBlockNumber) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "blockNumber",
-                block.number
-            );
-        }
+        _writeMintData(to, tokenId, options);
 
         return tokenId;
     }
