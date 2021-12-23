@@ -16,4 +16,5 @@ yarn build \
   && cp \
     $BASE/IEngine.sol/IEngine.json \
     $BASE/IShellFramework.sol/IShellFramework.json \
+    $BASE/IShellFactory.sol/IShellFactory.json \
       $FRONTEND
