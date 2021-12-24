@@ -7,11 +7,6 @@ import "./IShellFramework.sol";
 // All shell erc721s must implement this interface
 interface IShellERC721 is IShellFramework, IERC721Upgradeable {
 
-    // Mint a new token. Only callable by engine
-    function mint(address to, MintOptions calldata options)
-        external
-        returns (uint256);
-
     // need to reconcile collision between non-upgradeable and upgradeable
     // flavors of the openzep interfaces
     function supportsInterface(bytes4 interfaceId)

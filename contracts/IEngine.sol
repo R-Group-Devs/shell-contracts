@@ -26,7 +26,9 @@ interface IEngine is IERC165 {
     // Called by the framework during a transfer, including mints (from=0) and
     // burns (to=0). Cannot break transfer even in the case of reverting, as the
     // collection will wrap the downstream call in a try/catch
+    //
     // The engine MUST assert msg.sender == collection address!!
+    //
     function beforeTokenTransfer(
         IShellFramework collection,
         address operator,
@@ -38,11 +40,15 @@ interface IEngine is IERC165 {
 
     // Called by the framework following an engine install to a collection. Can
     // be used by the engine to block (by reverting) installation if needed.
+    //
     // The engine MUST assert msg.sender == collection address!!
+    //
     function afterInstallEngine(IShellFramework collection) external;
 
     // Called by the framework following an engine install to specific token.
     // Can be used by the engine to block (by reverting) installation if needed.
+    //
     // The engine MUST assert msg.sender == collection address!!
+    //
     function afterInstallEngine(IShellFramework collection, uint256 tokenId) external;
 }

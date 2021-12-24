@@ -71,17 +71,31 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     // Engine functionality
     // ---
 
-    function mint(address to, MintOptions calldata options)
+    function mint(MintEntry calldata entry) external returns (uint256) {
+        require(msg.sender == address(installedEngine), "shell: not engine");
+        return _mint(entry);
+    }
+
+    function _mint(MintEntry calldata entry) internal returns (uint256) {
+        require(entry.amount == 1, "shell: amount must be 1");
+        uint256 tokenId = nextTokenId++;
+        _mint(entry.to, tokenId);
+        _writeMintData(tokenId, entry);
+        return tokenId;
+    }
+
+    function batchMint(MintEntry[] calldata entries)
         external
-        returns (uint256)
+        returns (uint256[] memory)
     {
         require(msg.sender == address(installedEngine), "shell: not engine");
+        uint256[] memory tokenIds = new uint256[](entries.length);
 
-        uint256 tokenId = nextTokenId++;
-        _mint(to, tokenId);
-        _writeMintData(to, tokenId, options);
+        for (uint256 i = 0; i < entries.length; i++) {
+            tokenIds[i] = _mint(entries[i]);
+        }
 
-        return tokenId;
+        return tokenIds;
     }
 
     // ---

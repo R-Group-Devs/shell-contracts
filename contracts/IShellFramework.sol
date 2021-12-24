@@ -38,6 +38,12 @@ struct IntStorage {
     uint256 value;
 }
 
+struct MintEntry {
+    address to;
+    uint256 amount;
+    MintOptions options;
+}
+
 // Data provided by engine when minting a new token
 struct MintOptions {
     bool storeEngine;
@@ -171,6 +177,18 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
 
     // the currently installed engine for this collection
     function installedEngine() external view returns (IEngine);
+
+    // ---
+    // Engine functionality
+    // ---
+
+    // mint new tokens. Only callable by engine
+    function mint(MintEntry calldata entry) external returns (uint256);
+
+    // mint new tokens. Only callable by engine
+    function batchMint(MintEntry[] calldata entries)
+        external
+        returns (uint256[] memory);
 
     // ---
     // Storage writes

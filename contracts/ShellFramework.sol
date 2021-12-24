@@ -73,33 +73,32 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // ---
 
     function _writeMintData(
-        address mintingTo,
         uint256 tokenId,
-        MintOptions calldata options
+        MintEntry calldata entry
     ) internal {
         // write engine-provided immutable data
 
-        for (uint256 i = 0; i < options.stringData.length; i++) {
+        for (uint256 i = 0; i < entry.options.stringData.length; i++) {
             _writeTokenString(
                 StorageLocation.MINT_DATA,
                 tokenId,
-                options.stringData[i].key,
-                options.stringData[i].value
+                entry.options.stringData[i].key,
+                entry.options.stringData[i].value
             );
         }
 
-        for (uint256 i = 0; i < options.intData.length; i++) {
+        for (uint256 i = 0; i < entry.options.intData.length; i++) {
             _writeTokenInt(
                 StorageLocation.MINT_DATA,
                 tokenId,
-                options.intData[i].key,
-                options.intData[i].value
+                entry.options.intData[i].key,
+                entry.options.intData[i].value
             );
         }
 
         // write framework immutable data
 
-        if (options.storeEngine) {
+        if (entry.options.storeEngine) {
             _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
@@ -107,15 +106,15 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
                 uint256(uint160(address(installedEngine)))
             );
         }
-        if (options.storeMintedTo) {
+        if (entry.options.storeMintedTo) {
             _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "mintedTo",
-                uint256(uint160(address(mintingTo)))
+                uint256(uint160(address(entry.to)))
             );
         }
-        if (options.storeTimestamp) {
+        if (entry.options.storeTimestamp) {
             _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
@@ -124,7 +123,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
                 block.timestamp
             );
         }
-        if (options.storeBlockNumber) {
+        if (entry.options.storeBlockNumber) {
             _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
