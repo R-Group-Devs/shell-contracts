@@ -125,18 +125,10 @@ describe("ShellFactory", function () {
         ],
       });
       expect(
-        await collection["readString(uint8,uint256,string)"](
-          MINT_DATA_STORAGE,
-          "1",
-          "foo"
-        )
+        await collection.readTokenString(MINT_DATA_STORAGE, "1", "foo")
       ).to.equal("foo1");
       expect(
-        await collection["readString(uint8,uint256,string)"](
-          MINT_DATA_STORAGE,
-          "1",
-          "bar"
-        )
+        await collection.readTokenString(MINT_DATA_STORAGE, "1", "bar")
       ).to.equal("bar1");
     });
     it("should write ints in mint data", async () => {
@@ -149,18 +141,10 @@ describe("ShellFactory", function () {
         ],
       });
       expect(
-        await collection["readInt(uint8,uint256,string)"](
-          MINT_DATA_STORAGE,
-          "1",
-          "foo"
-        )
+        await collection.readTokenInt(MINT_DATA_STORAGE, "1", "foo")
       ).to.equal(123);
       expect(
-        await collection["readInt(uint8,uint256,string)"](
-          MINT_DATA_STORAGE,
-          "1",
-          "bar"
-        )
+        await collection.readTokenInt(MINT_DATA_STORAGE, "1", "bar")
       ).to.equal(456);
     });
   });
@@ -172,11 +156,7 @@ describe("ShellFactory", function () {
         storeEngine: true,
       });
       expect(
-        await collection["readInt(uint8,uint256,string)"](
-          FRAMEWORK_STORAGE,
-          "1",
-          "engine"
-        )
+        await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "engine")
       ).to.equal(mockEngine.address);
     });
     it("should store mintedTo if flag is set", async () => {
@@ -186,11 +166,7 @@ describe("ShellFactory", function () {
         storeMintedTo: true,
       });
       expect(
-        await collection["readInt(uint8,uint256,string)"](
-          FRAMEWORK_STORAGE,
-          "1",
-          "mintedTo"
-        )
+        await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "mintedTo")
       ).to.equal(a1);
     });
     it("should store timestamp if flag is set", async () => {
@@ -200,11 +176,7 @@ describe("ShellFactory", function () {
         storeTimestamp: true,
       });
       expect(
-        await collection["readInt(uint8,uint256,string)"](
-          FRAMEWORK_STORAGE,
-          "1",
-          "timestamp"
-        )
+        await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "timestamp")
       ).to.equal((await ethers.provider.getBlock("latest")).timestamp);
     });
     it("should store blockNumber if flag is set", async () => {
@@ -214,11 +186,7 @@ describe("ShellFactory", function () {
         storeBlockNumber: true,
       });
       expect(
-        await collection["readInt(uint8,uint256,string)"](
-          FRAMEWORK_STORAGE,
-          "1",
-          "blockNumber"
-        )
+        await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "blockNumber")
       ).to.equal(await ethers.provider.getBlockNumber());
     });
   });
@@ -226,21 +194,14 @@ describe("ShellFactory", function () {
     it("should allow writing ints to collection from engine", async () => {
       const collection = await createCollection();
       await mockEngine.writeIntToCollection(collection.address, "foo", 123);
-      const value = await collection["readInt(uint8,string)"](
-        ENGINE_STORAGE,
-        "foo"
-      );
+      const value = await collection.readCollectionInt(ENGINE_STORAGE, "foo");
       expect(value).to.equal(123);
     });
     it("should allow writing ints to token from engine", async () => {
       const collection = await createCollection();
       await mockEngine.mint(collection.address, "Qhash");
       await mockEngine.writeIntToToken(collection.address, "1", "foo", 123);
-      const value = await collection["readInt(uint8,uint256,string)"](
-        ENGINE_STORAGE,
-        "1",
-        "foo"
-      );
+      const value = await collection.readTokenInt(ENGINE_STORAGE, "1", "foo");
       expect(value).to.equal(123);
     });
     it("should revert if non-engine attempts to write to collection", async () => {

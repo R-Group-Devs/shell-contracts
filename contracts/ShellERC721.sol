@@ -62,9 +62,9 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     // NFT owner functionality
     // ---
 
-    function installEngineForToken(uint256 tokenId, IEngine engine) external {
+    function installTokenEngine(uint256 tokenId, IEngine engine) external {
         require(msg.sender == ownerOf(tokenId), "shell: not nft owner");
-        _installEngineForToken(tokenId, engine);
+        _installTokenEngine(tokenId, engine);
     }
 
     // ---

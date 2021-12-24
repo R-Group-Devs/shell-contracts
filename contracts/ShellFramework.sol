@@ -40,14 +40,14 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // NFT owner functionaltiy
     // ---
 
-    function _installEngineForToken(uint256 tokenId, IEngine engine) internal {
+    function _installTokenEngine(uint256 tokenId, IEngine engine) internal {
         require(
             engine.supportsInterface(type(IEngine).interfaceId),
             "shell: invalid engine"
         );
         _engineOverrides[tokenId] = engine;
         engine.afterInstallEngine(this);
-        emit EngineInstalledForToken(tokenId, engine);
+        emit TokenEngineInstalled(tokenId, engine);
     }
 
     // ---
@@ -80,7 +80,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         // write engine-provided immutable data
 
         for (uint256 i = 0; i < options.stringData.length; i++) {
-            _writeString(
+            _writeTokenString(
                 StorageLocation.MINT_DATA,
                 tokenId,
                 options.stringData[i].key,
@@ -89,7 +89,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         }
 
         for (uint256 i = 0; i < options.intData.length; i++) {
-            _writeInt(
+            _writeTokenInt(
                 StorageLocation.MINT_DATA,
                 tokenId,
                 options.intData[i].key,
@@ -100,7 +100,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         // write framework immutable data
 
         if (options.storeEngine) {
-            _writeInt(
+            _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "engine",
@@ -108,7 +108,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
             );
         }
         if (options.storeMintedTo) {
-            _writeInt(
+            _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "mintedTo",
@@ -116,7 +116,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
             );
         }
         if (options.storeTimestamp) {
-            _writeInt(
+            _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "timestamp",
@@ -125,7 +125,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
             );
         }
         if (options.storeBlockNumber) {
-            _writeInt(
+            _writeTokenInt(
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "blockNumber",
@@ -138,45 +138,45 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Storage write controller (for engine)
     // ---
 
-    function writeString(
+    function writeCollectionString(
         StorageLocation location,
         string calldata key,
         string calldata value
     ) external {
-        _validateWrite(location);
-        _writeString(location, key, value);
+        _validateCollectionWrite(location);
+        _writeCollectionString(location, key, value);
     }
 
-    function writeString(
+    function writeTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
         string calldata value
     ) external {
-        _validateWrite(location);
-        _writeString(location, tokenId, key, value);
+        _validateTokenWrite(location, tokenId);
+        _writeTokenString(location, tokenId, key, value);
     }
 
-    function writeInt(
+    function writeCollectionInt(
         StorageLocation location,
         string calldata key,
         uint256 value
     ) external {
-        _validateWrite(location);
-        _writeInt(location, key, value);
+        _validateCollectionWrite(location);
+        _writeCollectionInt(location, key, value);
     }
 
-    function writeInt(
+    function writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
         uint256 value
     ) external {
-        _validateWrite(location);
-        _writeInt(location, tokenId, key, value);
+        _validateTokenWrite(location, tokenId);
+        _writeTokenInt(location, tokenId, key, value);
     }
 
-    function _validateWrite(StorageLocation location) private view {
+    function _validateCollectionWrite(StorageLocation location) private view {
         require(
             location == StorageLocation.ENGINE,
             "shell: invalid storage write"
@@ -184,7 +184,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         require(msg.sender == address(installedEngine), "shell: not engine");
     }
 
-    function _validateWrite(StorageLocation location, uint256 tokenId)
+    function _validateTokenWrite(StorageLocation location, uint256 tokenId)
         private
         view
     {
@@ -210,7 +210,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Storage write implementation
     // ---
 
-    function _writeString(
+    function _writeCollectionString(
         StorageLocation location,
         string memory key,
         string memory value
@@ -220,7 +220,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         emit CollectionStringUpdated(location, key, value);
     }
 
-    function _writeString(
+    function _writeTokenString(
         StorageLocation location,
         uint256 tokenId,
         string memory key,
@@ -233,7 +233,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         emit TokenStringUpdated(location, tokenId, key, value);
     }
 
-    function _writeInt(
+    function _writeCollectionInt(
         StorageLocation location,
         string memory key,
         uint256 value
@@ -243,7 +243,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         emit CollectionIntUpdated(location, key, value);
     }
 
-    function _writeInt(
+    function _writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string memory key,
@@ -260,45 +260,45 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Event publishing
     // ---
 
-    function publishString(
+    function publishCollectionString(
         PublishChannel channel,
         string calldata topic,
         string calldata value
     ) external {
-        _validatePublish(channel);
+        _validateCollectionPublish(channel);
         emit CollectionStringPublished(channel, topic, value);
     }
 
-    function publishString(
+    function publishTokenString(
         PublishChannel channel,
         uint256 tokenId,
         string calldata topic,
         string calldata value
     ) external {
-        _validatePublish(channel);
+        _validateTokenPublish(channel, tokenId);
         emit TokenStringPublished(channel, tokenId, topic, value);
     }
 
-    function publishInt(
+    function publishCollectionInt(
         PublishChannel channel,
         string calldata topic,
         uint256 value
     ) external {
-        _validatePublish(channel);
+        _validateCollectionPublish(channel);
         emit CollectionIntPublished(channel, topic, value);
     }
 
-    function publishInt(
+    function publishTokenInt(
         PublishChannel channel,
         uint256 tokenId,
         string calldata topic,
         uint256 value
     ) external {
-        _validatePublish(channel);
+        _validateTokenPublish(channel, tokenId);
         emit TokenIntPublished(channel, tokenId, topic, value);
     }
 
-    function _validatePublish(PublishChannel channel) private view {
+    function _validateCollectionPublish(PublishChannel channel) private view {
         if (channel == PublishChannel.PUBLIC) {
             return;
         } else if (channel == PublishChannel.ENGINE) {
@@ -310,7 +310,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         revert("shell: invalid publish");
     }
 
-    function _validatePublish(PublishChannel channel, uint256 tokenId)
+    function _validateTokenPublish(PublishChannel channel, uint256 tokenId)
         private
         view
     {
@@ -338,7 +338,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Storage views
     // ---
 
-    function readString(StorageLocation location, string calldata key)
+    function readCollectionString(StorageLocation location, string calldata key)
         external
         view
         returns (string memory)
@@ -347,7 +347,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         return _stringStorage[storageKey];
     }
 
-    function readString(
+    function readTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key
@@ -358,7 +358,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         return _stringStorage[storageKey];
     }
 
-    function readInt(StorageLocation location, string calldata key)
+    function readCollectionInt(StorageLocation location, string calldata key)
         external
         view
         returns (uint256)
@@ -367,7 +367,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         return _intStorage[storageKey];
     }
 
-    function readInt(
+    function readTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string calldata key

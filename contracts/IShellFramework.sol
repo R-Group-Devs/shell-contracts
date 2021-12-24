@@ -60,7 +60,7 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     event EngineInstalled(IEngine engine);
 
     // A new engine was installed for a token
-    event EngineInstalledForToken(uint256 tokenId, IEngine engine);
+    event TokenEngineInstalled(uint256 tokenId, IEngine engine);
 
     // ---
     // Storage events
@@ -160,7 +160,7 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
 
     // override a token's engine. Only callable by NFT owner
-    function installEngineForToken(uint256 tokenId, IEngine engine) external;
+    function installTokenEngine(uint256 tokenId, IEngine engine) external;
 
     // ---
     // Collection owner (admin) functionaltiy
@@ -177,14 +177,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
 
     // Write a string to collection storage
-    function writeString(
+    function writeCollectionString(
         StorageLocation location,
         string calldata key,
         string calldata value
     ) external;
 
     // Write a string to token storage
-    function writeString(
+    function writeTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
@@ -192,14 +192,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     ) external;
 
     // Write a string to collection storage
-    function writeInt(
+    function writeCollectionInt(
         StorageLocation location,
         string calldata key,
         uint256 value
     ) external;
 
     // Write a string to token storage
-    function writeInt(
+    function writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
@@ -211,14 +211,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
 
     // publish a string from the collection
-    function publishString(
+    function publishCollectionString(
         PublishChannel channel,
         string calldata topic,
         string calldata value
     ) external;
 
     // publish a string from a specific token
-    function publishString(
+    function publishTokenString(
         PublishChannel channel,
         uint256 tokenId,
         string calldata topic,
@@ -226,14 +226,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     ) external;
 
     // publish a uint256 from the collection
-    function publishInt(
+    function publishCollectionInt(
         PublishChannel channel,
         string calldata topic,
         uint256 value
     ) external;
 
     // publish a uint256 from a specific token
-    function publishInt(
+    function publishTokenInt(
         PublishChannel channel,
         uint256 tokenId,
         string calldata topic,
@@ -245,26 +245,26 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
 
     // Read a string from collection storage
-    function readString(StorageLocation location, string calldata key)
+    function readCollectionString(StorageLocation location, string calldata key)
         external
         view
         returns (string memory);
 
     // Read a string from token storage
-    function readString(
+    function readTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key
     ) external view returns (string memory);
 
     // Read a uint256 from collection storage
-    function readInt(StorageLocation location, string calldata key)
+    function readCollectionInt(StorageLocation location, string calldata key)
         external
         view
         returns (uint256);
 
     // Read a uint256 from token storage
-    function readInt(
+    function readTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string calldata key

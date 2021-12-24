@@ -21,7 +21,7 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         override
         returns (string memory)
     {
-        string memory ipfsHash = collection.readString(
+        string memory ipfsHash = collection.readTokenString(
             StorageLocation.MINT_DATA,
             tokenId,
             "ipfsHash"
@@ -45,7 +45,7 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         string calldata key,
         uint256 value
     ) external {
-        collection.writeInt(StorageLocation.ENGINE, tokenId, key, value);
+        collection.writeTokenInt(StorageLocation.ENGINE, tokenId, key, value);
     }
 
     function writeIntToCollection(
@@ -53,7 +53,7 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         string calldata key,
         uint256 value
     ) external {
-        collection.writeInt(StorageLocation.ENGINE, key, value);
+        collection.writeCollectionInt(StorageLocation.ENGINE, key, value);
     }
 
     function mintPassthrough(
