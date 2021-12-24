@@ -54,8 +54,18 @@ contract RGroupPlaceholder is
         string calldata name_,
         string calldata bio
     ) public {
-        collection.writeString(StorageLocation.ENGINE, tokenId, "name", name_);
-        collection.writeString(StorageLocation.ENGINE, tokenId, "bio", bio);
+        collection.writeTokenString(
+            StorageLocation.ENGINE,
+            tokenId,
+            "name",
+            name_
+        );
+        collection.writeTokenString(
+            StorageLocation.ENGINE,
+            tokenId,
+            "bio",
+            bio
+        );
     }
 
     function _computeName(IShellFramework nft, uint256 tokenId)
@@ -64,7 +74,7 @@ contract RGroupPlaceholder is
         override
         returns (string memory)
     {
-        string memory name_ = nft.readString(
+        string memory name_ = nft.readTokenString(
             StorageLocation.ENGINE,
             tokenId,
             "name"
@@ -78,22 +88,22 @@ contract RGroupPlaceholder is
         override
         returns (string memory)
     {
-        string memory name_ = nft.readString(
+        string memory name_ = nft.readTokenString(
             StorageLocation.ENGINE,
             tokenId,
             "name"
         );
-        string memory bio = nft.readString(
+        string memory bio = nft.readTokenString(
             StorageLocation.ENGINE,
             tokenId,
             "bio"
         );
-        uint256 mintedTo = nft.readInt(
+        uint256 mintedTo = nft.readTokenInt(
             StorageLocation.FRAMEWORK,
             tokenId,
             "mintedTo"
         );
-        uint256 timestamp = nft.readInt(
+        uint256 timestamp = nft.readTokenInt(
             StorageLocation.FRAMEWORK,
             tokenId,
             "timestamp"

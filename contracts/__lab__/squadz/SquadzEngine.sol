@@ -142,7 +142,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
             collection.ownerOf(tokenId) != address(0),
             "SQUADZ: token doesn't exist"
         );
-        return collection.readInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
+        return collection.readCollectionInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
     }
 
     function isAdmin(IShellFramework collection, address address_) public view returns (bool) {
@@ -200,13 +200,13 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
             "SQUADZ: invalid descriptor address"
         );
         if (admin == true) {
-            collection.writeInt(
+            collection.writeCollectionInt(
                 StorageLocation.ENGINE,
                 _adminDescriptorKey(),
                 uint256(uint160(descriptorAddress))
             );
         } else {
-            collection.writeInt(
+            collection.writeCollectionInt(
                 StorageLocation.ENGINE,
                 _memberDescriptorKey(),
                 uint256(uint160(descriptorAddress))
@@ -218,14 +218,14 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         IPersonalizedDescriptor descriptor;
         if (admin == true) {
             descriptor = IPersonalizedDescriptor(address(uint160(
-                collection.readInt(
+                collection.readCollectionInt(
                     StorageLocation.ENGINE,
                     _adminDescriptorKey()
                 )
             )));
         } else {
             descriptor = IPersonalizedDescriptor(address(uint160(
-                collection.readInt(
+                collection.readCollectionInt(
                     StorageLocation.ENGINE,
                     _memberDescriptorKey()
                 )
@@ -253,11 +253,11 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     }
 
     function _adminTokenCount(IShellFramework collection, address address_) private view returns (uint256) {
-        return collection.readInt(StorageLocation.ENGINE, _adminTokenCountKey(address_));
+        return collection.readCollectionInt(StorageLocation.ENGINE, _adminTokenCountKey(address_));
     }
 
     function _setAdminTokenCount(IShellFramework collection, address address_, uint256 value) private {
-        collection.writeInt(StorageLocation.ENGINE, _adminTokenCountKey(address_), value);
+        collection.writeCollectionInt(StorageLocation.ENGINE, _adminTokenCountKey(address_), value);
     }
 
     function _incrementAdminTokenCount(IShellFramework collection, address address_) private {

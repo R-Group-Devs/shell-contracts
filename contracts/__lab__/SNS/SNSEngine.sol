@@ -196,28 +196,28 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
 
     function getSNSAddr(IShellERC721 collection) public view returns (address) {
         return address(uint160(
-            collection.readInt(StorageLocation.ENGINE, _snsKey())
+            collection.readCollectionInt(StorageLocation.ENGINE, _snsKey())
         ));
     }
 
     function getPrice(IShellERC721 collection) public view returns (uint256) {
-        return collection.readInt(StorageLocation.ENGINE, _priceKey());
+        return collection.readCollectionInt(StorageLocation.ENGINE, _priceKey());
     }
 
     function setPrice(IShellFramework collection, uint256 price) public collectionOwnerOnly(collection) {
-        collection.writeInt(StorageLocation.ENGINE, _priceKey(), price);
+        collection.writeCollectionInt(StorageLocation.ENGINE, _priceKey(), price);
     }
 
     function getBalance(IShellERC721 collection) public view returns (uint256) {
-        return collection.readInt(StorageLocation.ENGINE, _balanceKey(collection));
+        return collection.readCollectionInt(StorageLocation.ENGINE, _balanceKey(collection));
     }
 
     function getNameFromTokenId(IShellFramework collection, uint256 tokenId) public view returns (string memory) {
-        return collection.readString(StorageLocation.MINT_DATA, _idToNameKey(tokenId));
+        return collection.readCollectionString(StorageLocation.MINT_DATA, _idToNameKey(tokenId));
     }
 
     function getNameId(IShellFramework collection, bytes32 node) public view returns (uint256) {
-        return collection.readInt(StorageLocation.ENGINE, _nameKey(node));
+        return collection.readCollectionInt(StorageLocation.ENGINE, _nameKey(node));
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -270,7 +270,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function _setSNS(IShellFramework collection, address snsAddr) private {
-        collection.writeInt(
+        collection.writeCollectionInt(
             StorageLocation.ENGINE,
             _snsKey(),
             uint256(uint160(snsAddr))
@@ -286,7 +286,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function _setBalance(IShellERC721 collection, uint256 value) private {
-        collection.writeInt(StorageLocation.ENGINE, _balanceKey(collection), value);
+        collection.writeCollectionInt(StorageLocation.ENGINE, _balanceKey(collection), value);
     }
 
     function _nameKey(bytes32 node) private pure returns (string memory) {
@@ -294,7 +294,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function _setName(IShellERC721 collection, bytes32 node, uint256 tokenId) private {
-        collection.writeInt(StorageLocation.ENGINE, _nameKey(node), tokenId);
+        collection.writeCollectionInt(StorageLocation.ENGINE, _nameKey(node), tokenId);
     }
 
     function _idToNameKey(uint256 tokenId) private pure returns (string memory) {
@@ -302,7 +302,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function _getIdFromName(IShellERC721 collection, string calldata name_) private view returns (uint256) {
-        return collection.readInt(StorageLocation.MINT_DATA, name_);
+        return collection.readCollectionInt(StorageLocation.MINT_DATA, name_);
     }
 
     //===== Modifiers =====//
