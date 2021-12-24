@@ -10,7 +10,7 @@ import {
   ShellERC721__factory,
 } from "../typechain";
 
-interface MintData {
+interface MintOptions {
   storeEngine: boolean;
   storeMintedTo: boolean;
   storeTimestamp: boolean;
@@ -19,7 +19,13 @@ interface MintData {
   intData: Array<{ key: string; value: BigNumberish }>;
 }
 
-const mintData = (): MintData => {
+interface MintEntry {
+  to: string;
+  amount: number;
+  options: MintOptions;
+}
+
+const mintOptions = (): MintOptions => {
   return {
     storeEngine: false,
     storeMintedTo: false,
@@ -28,6 +34,14 @@ const mintData = (): MintData => {
     stringData: [],
     intData: [],
   };
+};
+
+const mintEntry = (
+  to: string,
+  amount = 1,
+  options = mintOptions()
+): MintEntry => {
+  return { to, amount, options };
 };
 
 const ENGINE_STORAGE = 1;
@@ -117,13 +131,16 @@ describe("ShellFactory", function () {
   describe("engine provided mint data", () => {
     it("should write strings in mint data", async () => {
       const collection = await createCollection();
-      await mockEngine.mintPassthrough(collection.address, a1, {
-        ...mintData(),
-        stringData: [
-          { key: "foo", value: "foo1" },
-          { key: "bar", value: "bar1" },
-        ],
-      });
+      await mockEngine.mintPassthrough(
+        collection.address,
+        mintEntry(a1, 1, {
+          ...mintOptions(),
+          stringData: [
+            { key: "foo", value: "foo1" },
+            { key: "bar", value: "bar1" },
+          ],
+        })
+      );
       expect(
         await collection.readTokenString(MINT_DATA_STORAGE, "1", "foo")
       ).to.equal("foo1");
@@ -133,13 +150,16 @@ describe("ShellFactory", function () {
     });
     it("should write ints in mint data", async () => {
       const collection = await createCollection();
-      await mockEngine.mintPassthrough(collection.address, a1, {
-        ...mintData(),
-        intData: [
-          { key: "foo", value: 123 },
-          { key: "bar", value: 456 },
-        ],
-      });
+      await mockEngine.mintPassthrough(
+        collection.address,
+        mintEntry(a1, 1, {
+          ...mintOptions(),
+          intData: [
+            { key: "foo", value: 123 },
+            { key: "bar", value: 456 },
+          ],
+        })
+      );
       expect(
         await collection.readTokenInt(MINT_DATA_STORAGE, "1", "foo")
       ).to.equal(123);
@@ -151,9 +171,8 @@ describe("ShellFactory", function () {
   describe("framework mint data", () => {
     it("should store engine if flag is set", async () => {
       const collection = await createCollection();
-      await mockEngine.mintPassthrough(collection.address, a1, {
-        ...mintData(),
-        storeEngine: true,
+      await mockEngine.mintPassthrough(collection.address, {
+        ...mintEntry(a1, 1, { ...mintOptions(), storeEngine: true }),
       });
       expect(
         await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "engine")
@@ -161,9 +180,8 @@ describe("ShellFactory", function () {
     });
     it("should store mintedTo if flag is set", async () => {
       const collection = await createCollection();
-      await mockEngine.mintPassthrough(collection.address, a1, {
-        ...mintData(),
-        storeMintedTo: true,
+      await mockEngine.mintPassthrough(collection.address, {
+        ...mintEntry(a1, 1, { ...mintOptions(), storeMintedTo: true }),
       });
       expect(
         await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "mintedTo")
@@ -171,9 +189,8 @@ describe("ShellFactory", function () {
     });
     it("should store timestamp if flag is set", async () => {
       const collection = await createCollection();
-      await mockEngine.mintPassthrough(collection.address, a1, {
-        ...mintData(),
-        storeTimestamp: true,
+      await mockEngine.mintPassthrough(collection.address, {
+        ...mintEntry(a1, 1, { ...mintOptions(), storeTimestamp: true }),
       });
       expect(
         await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "timestamp")
@@ -181,10 +198,10 @@ describe("ShellFactory", function () {
     });
     it("should store blockNumber if flag is set", async () => {
       const collection = await createCollection();
-      await mockEngine.mintPassthrough(collection.address, a1, {
-        ...mintData(),
-        storeBlockNumber: true,
+      await mockEngine.mintPassthrough(collection.address, {
+        ...mintEntry(a1, 1, { ...mintOptions(), storeBlockNumber: true }),
       });
+
       expect(
         await collection.readTokenInt(FRAMEWORK_STORAGE, "1", "blockNumber")
       ).to.equal(await ethers.provider.getBlockNumber());
