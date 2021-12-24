@@ -29,7 +29,7 @@ task("deploy", "Deploy a contract")
     console.log("compiling all contracts ...");
     await run("compile");
 
-    const ContractFactory = await ethers.getContractFactory(contract);
+    const ContractFactory: any = await ethers.getContractFactory(contract);
 
     console.log(`Deploying ${contract} ...`);
     const deployed = await ContractFactory.deploy();
