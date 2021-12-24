@@ -8,7 +8,7 @@ import "../engines/BeforeTokenTransferNopEngine.sol";
 import "../engines/NoRoyaltiesEngine.sol";
 
 // Simple engine with a few conventions:
-contract MockEngine is IEngine, NoRoyaltiesEngine, BeforeTokenTransferNopEngine {
+contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
     string public baseUri;
 
     function getEngineName() external pure returns (string memory) {
@@ -29,6 +29,16 @@ contract MockEngine is IEngine, NoRoyaltiesEngine, BeforeTokenTransferNopEngine 
         return string(abi.encodePacked("ipfs://ipfs/", ipfsHash));
     }
 
+    // 10% on everything
+    function getRoyaltyInfo(
+        IShellFramework collection,
+        uint256,
+        uint256 salePrice
+    ) external view returns (address receiver, uint256 royaltyAmount) {
+        receiver = collection.owner();
+        royaltyAmount = (salePrice * 1000) / 10000;
+    }
+
     function writeIntToToken(
         IShellERC721 collection,
         uint256 tokenId,
@@ -44,6 +54,14 @@ contract MockEngine is IEngine, NoRoyaltiesEngine, BeforeTokenTransferNopEngine 
         uint256 value
     ) external {
         collection.writeInt(StorageLocation.ENGINE, key, value);
+    }
+
+    function mintPassthrough(
+        IShellERC721 collection,
+        address to,
+        MintOptions calldata options
+    ) external returns (uint256) {
+        return collection.mint(to, options);
     }
 
     function mint(IShellERC721 collection, string calldata ipfsHash)
@@ -81,7 +99,7 @@ contract MockEngine is IEngine, NoRoyaltiesEngine, BeforeTokenTransferNopEngine 
         );
     }
 
-     function afterInstallEngine(IShellFramework collection, uint256)
+    function afterInstallEngine(IShellFramework collection, uint256)
         external
         view
         override(IEngine)

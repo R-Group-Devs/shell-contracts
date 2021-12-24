@@ -1,5 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumberish } from "ethers";
+import { parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import {
   ShellFactory,
@@ -7,6 +9,30 @@ import {
   MockEngine,
   ShellERC721__factory,
 } from "../typechain";
+
+interface MintData {
+  storeEngine: boolean;
+  storeMintedTo: boolean;
+  storeTimestamp: boolean;
+  storeBlockNumber: boolean;
+  stringData: Array<{ key: string; value: string }>;
+  intData: Array<{ key: string; value: BigNumberish }>;
+}
+
+const mintData = (): MintData => {
+  return {
+    storeEngine: false,
+    storeMintedTo: false,
+    storeTimestamp: false,
+    storeBlockNumber: false,
+    stringData: [],
+    intData: [],
+  };
+};
+
+const ENGINE_STORAGE = 1;
+const MINT_DATA_STORAGE = 2;
+const FRAMEWORK_STORAGE = 3;
 
 describe("ShellFactory", function () {
   // ---
@@ -59,6 +85,13 @@ describe("ShellFactory", function () {
       await mockEngine.mint(collection.address, "Qhash");
       expect(await collection.tokenURI("1")).to.equal("ipfs://ipfs/Qhash");
     });
+    it("should resolve royalties from engine", async () => {
+      const collection = await createCollection();
+      await mockEngine.mint(collection.address, "Qhash");
+      const resp = await collection.royaltyInfo("1", parseUnits("1000"));
+      expect(resp.receiver).to.equal(a0);
+      expect(resp.royaltyAmount).to.equal(parseUnits("100"));
+    });
   });
   describe("engine installs", async () => {
     it("should revert if invalid engine", async () => {
@@ -79,6 +112,140 @@ describe("ShellFactory", function () {
       expect(c1.installEngine(mockEngine.address)).to.be.revertedWith(
         "Ownable: caller is not owner"
       );
+    });
+  });
+  describe("engine provided mint data", () => {
+    it("should write strings in mint data", async () => {
+      const collection = await createCollection();
+      await mockEngine.mintPassthrough(collection.address, a1, {
+        ...mintData(),
+        stringData: [
+          { key: "foo", value: "foo1" },
+          { key: "bar", value: "bar1" },
+        ],
+      });
+      expect(
+        await collection["readString(uint8,uint256,string)"](
+          MINT_DATA_STORAGE,
+          "1",
+          "foo"
+        )
+      ).to.equal("foo1");
+      expect(
+        await collection["readString(uint8,uint256,string)"](
+          MINT_DATA_STORAGE,
+          "1",
+          "bar"
+        )
+      ).to.equal("bar1");
+    });
+    it("should write ints in mint data", async () => {
+      const collection = await createCollection();
+      await mockEngine.mintPassthrough(collection.address, a1, {
+        ...mintData(),
+        intData: [
+          { key: "foo", value: 123 },
+          { key: "bar", value: 456 },
+        ],
+      });
+      expect(
+        await collection["readInt(uint8,uint256,string)"](
+          MINT_DATA_STORAGE,
+          "1",
+          "foo"
+        )
+      ).to.equal(123);
+      expect(
+        await collection["readInt(uint8,uint256,string)"](
+          MINT_DATA_STORAGE,
+          "1",
+          "bar"
+        )
+      ).to.equal(456);
+    });
+  });
+  describe("framework mint data", () => {
+    it("should store engine if flag is set", async () => {
+      const collection = await createCollection();
+      await mockEngine.mintPassthrough(collection.address, a1, {
+        ...mintData(),
+        storeEngine: true,
+      });
+      expect(
+        await collection["readInt(uint8,uint256,string)"](
+          FRAMEWORK_STORAGE,
+          "1",
+          "engine"
+        )
+      ).to.equal(mockEngine.address);
+    });
+    it("should store mintedTo if flag is set", async () => {
+      const collection = await createCollection();
+      await mockEngine.mintPassthrough(collection.address, a1, {
+        ...mintData(),
+        storeMintedTo: true,
+      });
+      expect(
+        await collection["readInt(uint8,uint256,string)"](
+          FRAMEWORK_STORAGE,
+          "1",
+          "mintedTo"
+        )
+      ).to.equal(a1);
+    });
+    it("should store timestamp if flag is set", async () => {
+      const collection = await createCollection();
+      await mockEngine.mintPassthrough(collection.address, a1, {
+        ...mintData(),
+        storeTimestamp: true,
+      });
+      expect(
+        await collection["readInt(uint8,uint256,string)"](
+          FRAMEWORK_STORAGE,
+          "1",
+          "timestamp"
+        )
+      ).to.equal((await ethers.provider.getBlock("latest")).timestamp);
+    });
+    it("should store blockNumber if flag is set", async () => {
+      const collection = await createCollection();
+      await mockEngine.mintPassthrough(collection.address, a1, {
+        ...mintData(),
+        storeBlockNumber: true,
+      });
+      expect(
+        await collection["readInt(uint8,uint256,string)"](
+          FRAMEWORK_STORAGE,
+          "1",
+          "blockNumber"
+        )
+      ).to.equal(await ethers.provider.getBlockNumber());
+    });
+  });
+  describe("engine storage", () => {
+    it("should allow writing ints to collection from engine", async () => {
+      const collection = await createCollection();
+      await mockEngine.writeIntToCollection(collection.address, "foo", 123);
+      const value = await collection["readInt(uint8,string)"](
+        ENGINE_STORAGE,
+        "foo"
+      );
+      expect(value).to.equal(123);
+    });
+    it("should allow writing ints to token from engine", async () => {
+      const collection = await createCollection();
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.writeIntToToken(collection.address, "1", "foo", 123);
+      const value = await collection["readInt(uint8,uint256,string)"](
+        ENGINE_STORAGE,
+        "1",
+        "foo"
+      );
+      expect(value).to.equal(123);
+    });
+    it("should revert if non-engine attempts to write to collection", async () => {
+      const collection = await createCollection();
+      await mockEngine.mint(collection.address, "Qhash");
     });
   });
 });
