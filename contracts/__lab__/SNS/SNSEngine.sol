@@ -6,7 +6,7 @@ import {RegistrarLike} from "./RegistrarLike.sol";
 import {ReverseRegistrarLike} from "./ReverseRegistrarLike.sol";
 import {ReverseRecordsLike} from "./ReverseRecordsLike.sol";
 import {IEngine} from "../../IEngine.sol";
-import {IShellFramework} from "../../IShellFramework.sol";
+import {IShellFramework, MintEntry} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
 // import {ShellFramework} from "../../ShellFramework.sol";
 import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
@@ -243,16 +243,19 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
         intData[0].key = name_;
         intData[0].value = nextTokenId;
 
-        uint256 tokenId = collection.mint(
-            to,
-            // minimal storage for minimal gas cost
-            MintOptions({
-                storeEngine: false,
-                storeMintedTo: false,
-                storeTimestamp: false,
-                storeBlockNumber: false,
-                stringData: stringData,
-                intData: intData
+        uint256 tokenId = collection.mint(MintEntry({
+            to: to,
+            amount: 1,
+            options:
+                // minimal storage for minimal gas cost
+                MintOptions({
+                    storeEngine: false,
+                    storeMintedTo: false,
+                    storeTimestamp: false,
+                    storeBlockNumber: false,
+                    stringData: stringData,
+                    intData: intData
+                })
             })
         );
 

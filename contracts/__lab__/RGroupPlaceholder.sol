@@ -32,14 +32,17 @@ contract RGroupPlaceholder is
         IntStorage[] memory intData = new IntStorage[](0);
 
         uint256 tokenId = collection.mint(
-            msg.sender,
-            MintOptions({
-                storeEngine: true,
-                storeMintedTo: true,
-                storeTimestamp: true,
-                storeBlockNumber: true,
-                stringData: stringData,
-                intData: intData
+            MintEntry({
+                to: msg.sender,
+                amount: 1,
+                options: MintOptions({
+                    storeEngine: true,
+                    storeMintedTo: true,
+                    storeTimestamp: true,
+                    storeBlockNumber: true,
+                    stringData: stringData,
+                    intData: intData
+                })
             })
         );
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IEngine} from "../../IEngine.sol";
 import {ISquadzEngine} from "./ISquadzEngine.sol";
-import {IShellFramework} from "../../IShellFramework.sol";
+import {IShellFramework, MintEntry} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
 import {IPersonalizedDescriptor} from "./IPersonalizedDescriptor.sol";
 import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
@@ -177,16 +177,19 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
           // _incrementAdminTokenCount(collection, to); beforeTokenTransfer covers this?
         }
 
-        uint256 tokenId = collection.mint(
-            to,
-            // minimal storage for minimal gas cost
-            MintOptions({
-                storeEngine: false,
-                storeMintedTo: true,
-                storeTimestamp: false,
-                storeBlockNumber: false,
-                stringData: stringData,
-                intData: intData
+        uint256 tokenId = collection.mint(MintEntry({
+            to: to,
+            amount: 1,
+            options:
+                // minimal storage for minimal gas cost
+                MintOptions({
+                    storeEngine: false,
+                    storeMintedTo: true,
+                    storeTimestamp: false,
+                    storeBlockNumber: false,
+                    stringData: stringData,
+                    intData: intData
+                })
             })
         );
 

@@ -56,12 +56,11 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         collection.writeCollectionInt(StorageLocation.ENGINE, key, value);
     }
 
-    function mintPassthrough(
-        IShellERC721 collection,
-        address to,
-        MintOptions calldata options
-    ) external returns (uint256) {
-        return collection.mint(to, options);
+    function mintPassthrough(IShellERC721 collection, MintEntry calldata entry)
+        external
+        returns (uint256)
+    {
+        return collection.mint(entry);
     }
 
     function mint(IShellERC721 collection, string calldata ipfsHash)
@@ -74,14 +73,17 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         stringData[0] = StringStorage({key: "ipfsHash", value: ipfsHash});
 
         uint256 tokenId = collection.mint(
-            msg.sender,
-            MintOptions({
-                storeEngine: false,
-                storeMintedTo: false,
-                storeTimestamp: false,
-                storeBlockNumber: false,
-                stringData: stringData,
-                intData: intData
+            MintEntry({
+                to: msg.sender,
+                amount: 1,
+                options: MintOptions({
+                    storeEngine: false,
+                    storeMintedTo: false,
+                    storeTimestamp: false,
+                    storeBlockNumber: false,
+                    stringData: stringData,
+                    intData: intData
+                })
             })
         );
 
