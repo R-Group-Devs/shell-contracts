@@ -57,6 +57,7 @@ struct MintOptions {
 // Interface for every collection launched by shell.
 // Concrete implementations must return true on ERC165 checks for this interface
 // (as well as erc165 / 2981)
+// interfaceId = 0x46877bbc
 interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
     // Framework events

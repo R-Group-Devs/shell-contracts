@@ -1,6 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumberish } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import {
@@ -9,44 +8,13 @@ import {
   MockEngine,
   ShellERC721__factory,
 } from "../typechain";
-
-interface MintOptions {
-  storeEngine: boolean;
-  storeMintedTo: boolean;
-  storeTimestamp: boolean;
-  storeBlockNumber: boolean;
-  stringData: Array<{ key: string; value: string }>;
-  intData: Array<{ key: string; value: BigNumberish }>;
-}
-
-interface MintEntry {
-  to: string;
-  amount: number;
-  options: MintOptions;
-}
-
-const mintOptions = (): MintOptions => {
-  return {
-    storeEngine: false,
-    storeMintedTo: false,
-    storeTimestamp: false,
-    storeBlockNumber: false,
-    stringData: [],
-    intData: [],
-  };
-};
-
-const mintEntry = (
-  to: string,
-  amount = 1,
-  options = mintOptions()
-): MintEntry => {
-  return { to, amount, options };
-};
-
-const ENGINE_STORAGE = 1;
-const MINT_DATA_STORAGE = 2;
-const FRAMEWORK_STORAGE = 3;
+import {
+  mintEntry,
+  mintOptions,
+  MINT_DATA_STORAGE,
+  FRAMEWORK_STORAGE,
+  ENGINE_STORAGE,
+} from "./fixtures";
 
 describe("ShellFactory", function () {
   // ---
@@ -224,6 +192,25 @@ describe("ShellFactory", function () {
     it("should revert if non-engine attempts to write to collection", async () => {
       const collection = await createCollection();
       await mockEngine.mint(collection.address, "Qhash");
+    });
+  });
+  describe("additional implementations", () => {
+    it("should work with erc1155 base implementation", async () => {
+      const ShellERC1155 = await ethers.getContractFactory("ShellERC1155");
+      const erc1155 = await ShellERC1155.deploy();
+      await factory.registerImplementation("erc1155", erc1155.address);
+      const trx = await factory.createCollection(
+        "Test",
+        "TEST",
+        "erc1155",
+        mockEngine.address,
+        a0
+      );
+      const mined = await trx.wait();
+      const address = mined.events?.[2].args?.collection;
+      const collection = ShellERC1155.attach(address);
+      await mockEngine.mint(collection.address, "hash");
+      expect(await collection.uri("1")).to.match(/hash/);
     });
   });
 });

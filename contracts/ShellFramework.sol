@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./libraries/Ownable.sol";
 import "./IShellFramework.sol";
+import "./IShellERC1155.sol";
 
 // Abstract implementation of the shell framework interface -- can be used as a
 // base for all shell collections
@@ -46,7 +47,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
             "shell: invalid engine"
         );
         _engineOverrides[tokenId] = engine;
-        engine.afterInstallEngine(this);
+        engine.afterInstallEngine(this, tokenId);
         emit TokenEngineInstalled(tokenId, engine);
     }
 
@@ -72,10 +73,9 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // Standard mint functionality
     // ---
 
-    function _writeMintData(
-        uint256 tokenId,
-        MintEntry calldata entry
-    ) internal {
+    function _writeMintData(uint256 tokenId, MintEntry calldata entry)
+        internal
+    {
         // write engine-provided immutable data
 
         for (uint256 i = 0; i < entry.options.stringData.length; i++) {
