@@ -11,6 +11,7 @@ yarn build \
     $BASE/IEngine.sol/IEngine.json \
     $BASE/IShellFramework.sol/IShellFramework.json \
     $BASE/IShellERC721.sol/IShellERC721.json \
+    $BASE/IShellERC1155.sol/IShellERC1155.json \
     $BASE/IShellFactory.sol/IShellFactory.json \
       $GRAPH \
   && cp \
