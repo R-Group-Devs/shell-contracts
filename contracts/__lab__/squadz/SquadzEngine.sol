@@ -12,14 +12,12 @@ import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
  * Insert standard reference to shell here
  */
 
-// TODO use OnChainMetadataEngine for Squadz NFTs (implies other changes)
-// TODO public view for mintedTo address
+// NOTE If an engine is built without a need for many of its own events, this makes it much easier to spin up UIs, since the app 
+// can depend on the existing shell subgraph.
 
-// TODO events
+// NOTE "fan" NFTs can be implemented as an independent lego, since they grant no priviliges and should be a separate collection
 
-// TODO "fan" NFTs can be implemented as an independent lego, since they grant no priviliges and should be a separate collection
-
-contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
+contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
 
     //===== Engine State =====//
 
@@ -41,12 +39,16 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     // Called by the framework following an engine install. Can be used by the
     // engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
-    function afterInstallEngine(IShellFramework) external pure {
-        return;
+    // Check IERC721Upgradeable as well, because this does not check inherited functions
+    function afterInstallEngine(IShellFramework collection) external view {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId),
+            "SQUADZ: collection must support IShellERC721"
+        );
     }
 
     function afterInstallEngine(IShellFramework, uint256) external pure {
-        revert("cannot install engine");
+        revert("SQUADZ: no ERC1155 support");
     }
 
     // Get the name for this engine
@@ -60,7 +62,6 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         view
         returns (string memory) {
         IPersonalizedDescriptor descriptor;
-        // TODO still having to do these awkward conversions -- not the end of the world
         IShellERC721 token = IShellERC721(address(collection));
         if (isAdminToken(token, tokenId)) {
             descriptor = _getDescriptor(collection, true);
@@ -116,6 +117,8 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return _mint(collection, to, admin);
     }
 
+    // NOTE I think the interface batchMint that uses an array of MintEntries might not be neccessary, and is kind of annoying to implement 
+    // I would have to create an array of mint entries here rather than getting to reuse my mint function, right?
     function batchMint(
         IShellERC721 collection,
         address[] calldata toAddresses,
@@ -133,7 +136,17 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return ids;
     }
 
-    // TODO burn -- need this to be implemented in ShellERC721 first
+    function mintedTo(IShellFramework collection, uint256 tokenId) external view returns (address) {
+        return address(uint160(
+          collection.readTokenInt(
+              StorageLocation.FRAMEWORK,
+              tokenId,
+              "mintedTo"
+          )
+        ));
+    }
+
+    // TODO burn -- need this to be implemented in ShellERC721 first, I think
 
     //===== Public Functions =====//
 
@@ -142,7 +155,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
             collection.ownerOf(tokenId) != address(0),
             "SQUADZ: token doesn't exist"
         );
-        return collection.readCollectionInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
+        return collection.readTokenInt(StorageLocation.MINT_DATA, tokenId, _adminTokenKey()) == 1;
     }
 
     function isAdmin(IShellFramework collection, address address_) public view returns (bool) {
@@ -172,7 +185,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         StringStorage[] memory stringData = new StringStorage[](0);
         IntStorage[] memory intData = new IntStorage[](1);
         if (admin == true) {
-          intData[0].key = _adminTokenKey(collection.nextTokenId());
+          intData[0].key = _adminTokenKey();
           intData[0].value = 1;
           // _incrementAdminTokenCount(collection, to); beforeTokenTransfer covers this?
         }
@@ -239,9 +252,8 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     //===== Private Functions =====//
 
-    // TODO I think there's token specific storage that can be used?
-    function _adminTokenKey(uint256 tokenId) private pure returns (string memory) {
-        return string(abi.encodePacked(tokenId, "ADMIN_TOKEN"));
+    function _adminTokenKey() private pure returns (string memory) {
+        return "ADMIN_TOKEN";
     }
 
     function _adminTokenCountKey(address address_) private pure returns (string memory) {

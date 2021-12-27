@@ -102,10 +102,11 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     // Called by the framework following an engine install. Can be used by the
     // engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
-    function afterInstallEngine(IShellFramework collection) external collectionOwnerOnly(collection) {
+    function afterInstallEngine(IShellFramework collection) external {
+        require(msg.sender == address(collection), "SNS: msg.sender not collection");
         address snsAddr = address(new SNS(address(this), address(collection)));
         _setSNS(collection, snsAddr);
-        // start with a price too expensive to buy so the owner can do a "fair release" at a lower price and later time
+        // start with a price too expensive to buy so the owner can do a "fair release" at a lower price later
         setPrice(collection, MAX_INT);
     }
 
@@ -204,7 +205,12 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
         return collection.readCollectionInt(StorageLocation.ENGINE, _priceKey());
     }
 
-    function setPrice(IShellFramework collection, uint256 price) public collectionOwnerOnly(collection) {
+    function setPrice(IShellFramework collection, uint256 price) public {
+        require(
+            msg.sender == collection.owner() ||
+            msg.sender == address(collection),
+            "SNS: msg.sender not collection nor collection owner"
+        );
         collection.writeCollectionInt(StorageLocation.ENGINE, _priceKey(), price);
     }
 
@@ -306,12 +312,5 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
 
     function _getIdFromName(IShellERC721 collection, string calldata name_) private view returns (uint256) {
         return collection.readCollectionInt(StorageLocation.MINT_DATA, name_);
-    }
-
-    //===== Modifiers =====//
-
-    modifier collectionOwnerOnly(IShellFramework collection) {
-        require(msg.sender == collection.owner(), "SNS: msg.sender not collection owner");
-        _;
     }
 }
