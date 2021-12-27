@@ -59,75 +59,43 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     }
 
     // ---
+    // NFT owner functionality
+    // ---
+
+    function installTokenEngine(uint256 tokenId, IEngine engine) external {
+        require(msg.sender == ownerOf(tokenId), "shell: not nft owner");
+        _installTokenEngine(tokenId, engine);
+    }
+
+    // ---
     // Engine functionality
     // ---
 
-    function mint(address to, MintOptions calldata options)
+    function mint(MintEntry calldata entry) external returns (uint256) {
+        require(msg.sender == address(installedEngine), "shell: not engine");
+        return _mint(entry);
+    }
+
+    function _mint(MintEntry calldata entry) internal returns (uint256) {
+        require(entry.amount == 1, "shell: amount must be 1");
+        uint256 tokenId = nextTokenId++;
+        _mint(entry.to, tokenId);
+        _writeMintData(tokenId, entry);
+        return tokenId;
+    }
+
+    function batchMint(MintEntry[] calldata entries)
         external
-        returns (uint256)
+        returns (uint256[] memory)
     {
         require(msg.sender == address(installedEngine), "shell: not engine");
+        uint256[] memory tokenIds = new uint256[](entries.length);
 
-        uint256 tokenId = nextTokenId++;
-        _mint(to, tokenId);
-
-        // write engine-provided immutable data
-
-        for (uint256 i = 0; i < options.stringData.length; i++) {
-            _writeString(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                options.stringData[i].key,
-                options.stringData[i].value
-            );
+        for (uint256 i = 0; i < entries.length; i++) {
+            tokenIds[i] = _mint(entries[i]);
         }
 
-        for (uint256 i = 0; i < options.intData.length; i++) {
-            _writeInt(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                options.intData[i].key,
-                options.intData[i].value
-            );
-        }
-
-        // write framework immutable data
-
-        if (options.storeEngine) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "engine",
-                uint256(uint160(address(installedEngine)))
-            );
-        }
-        if (options.storeMintedTo) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "mintedTo",
-                uint256(uint160(address(to)))
-            );
-        }
-        if (options.storeTimestamp) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "timestamp",
-                // solhint-disable-next-line not-rely-on-time
-                block.timestamp
-            );
-        }
-        if (options.storeBlockNumber) {
-            _writeInt(
-                StorageLocation.FRAMEWORK,
-                tokenId,
-                "blockNumber",
-                block.number
-            );
-        }
-
-        return tokenId;
+        return tokenIds;
     }
 
     // ---

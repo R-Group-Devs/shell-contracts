@@ -38,6 +38,12 @@ struct IntStorage {
     uint256 value;
 }
 
+struct MintEntry {
+    address to;
+    uint256 amount;
+    MintOptions options;
+}
+
 // Data provided by engine when minting a new token
 struct MintOptions {
     bool storeEngine;
@@ -51,6 +57,7 @@ struct MintOptions {
 // Interface for every collection launched by shell.
 // Concrete implementations must return true on ERC165 checks for this interface
 // (as well as erc165 / 2981)
+// interfaceId = 0x46877bbc
 interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
     // Framework events
@@ -58,6 +65,9 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
 
     // A new engine was installed
     event EngineInstalled(IEngine engine);
+
+    // A new engine was installed for a token
+    event TokenEngineInstalled(uint256 tokenId, IEngine engine);
 
     // ---
     // Storage events
@@ -128,6 +138,18 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     );
 
     // ---
+    // Collection base
+    // ---
+
+    // called immediately after cloning
+    function initialize(
+        string calldata name,
+        string calldata symbol,
+        IEngine engine,
+        address owner
+    ) external;
+
+    // ---
     // General collection info / metadata
     // ---
 
@@ -136,6 +158,16 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
 
     // collection name
     function symbol() external view returns (string memory);
+
+    // next token id serial number
+    function nextTokenId() external view returns (uint256);
+
+    // ---
+    // NFT owner functionaltiy
+    // ---
+
+    // override a token's engine. Only callable by NFT owner
+    function installTokenEngine(uint256 tokenId, IEngine engine) external;
 
     // ---
     // Collection owner (admin) functionaltiy
@@ -148,18 +180,30 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     function installedEngine() external view returns (IEngine);
 
     // ---
+    // Engine functionality
+    // ---
+
+    // mint new tokens. Only callable by engine
+    function mint(MintEntry calldata entry) external returns (uint256);
+
+    // mint new tokens. Only callable by engine
+    function batchMint(MintEntry[] calldata entries)
+        external
+        returns (uint256[] memory);
+
+    // ---
     // Storage writes
     // ---
 
     // Write a string to collection storage
-    function writeString(
+    function writeCollectionString(
         StorageLocation location,
         string calldata key,
         string calldata value
     ) external;
 
     // Write a string to token storage
-    function writeString(
+    function writeTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
@@ -167,14 +211,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     ) external;
 
     // Write a string to collection storage
-    function writeInt(
+    function writeCollectionInt(
         StorageLocation location,
         string calldata key,
         uint256 value
     ) external;
 
     // Write a string to token storage
-    function writeInt(
+    function writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string calldata key,
@@ -186,14 +230,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
 
     // publish a string from the collection
-    function publishString(
+    function publishCollectionString(
         PublishChannel channel,
         string calldata topic,
         string calldata value
     ) external;
 
     // publish a string from a specific token
-    function publishString(
+    function publishTokenString(
         PublishChannel channel,
         uint256 tokenId,
         string calldata topic,
@@ -201,14 +245,14 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     ) external;
 
     // publish a uint256 from the collection
-    function publishInt(
+    function publishCollectionInt(
         PublishChannel channel,
         string calldata topic,
         uint256 value
     ) external;
 
     // publish a uint256 from a specific token
-    function publishInt(
+    function publishTokenInt(
         PublishChannel channel,
         uint256 tokenId,
         string calldata topic,
@@ -220,26 +264,26 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // ---
 
     // Read a string from collection storage
-    function readString(StorageLocation location, string calldata key)
+    function readCollectionString(StorageLocation location, string calldata key)
         external
         view
         returns (string memory);
 
     // Read a string from token storage
-    function readString(
+    function readTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key
     ) external view returns (string memory);
 
     // Read a uint256 from collection storage
-    function readInt(StorageLocation location, string calldata key)
+    function readCollectionInt(StorageLocation location, string calldata key)
         external
         view
         returns (uint256);
 
     // Read a uint256 from token storage
-    function readInt(
+    function readTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string calldata key

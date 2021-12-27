@@ -10,8 +10,9 @@
     "test:coverage": "hardhat coverage",
     "clean": "hardhat clean && rm -rf ./cache ./coverage",
     "build": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.ts",
-    "deploy:fixtures": "hardhat run scripts/deploy-fixtures.ts",
+    "deploy": "hardhat deploy",
+    "deploy:implementation": "hardhat deploy:implementation",
+    "register": "hardhat register",
     "verify": "hardhat verify"
   },
   "dependencies": {

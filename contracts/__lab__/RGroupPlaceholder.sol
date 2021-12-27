@@ -20,7 +20,7 @@ contract RGroupPlaceholder is
     using Strings for uint256;
 
     function getEngineName() external pure returns (string memory) {
-        return "R Group Membership";
+        return "r-group-placeholder";
     }
 
     function mint(
@@ -32,14 +32,17 @@ contract RGroupPlaceholder is
         IntStorage[] memory intData = new IntStorage[](0);
 
         uint256 tokenId = collection.mint(
-            msg.sender,
-            MintOptions({
-                storeEngine: true,
-                storeMintedTo: true,
-                storeTimestamp: true,
-                storeBlockNumber: true,
-                stringData: stringData,
-                intData: intData
+            MintEntry({
+                to: msg.sender,
+                amount: 1,
+                options: MintOptions({
+                    storeEngine: true,
+                    storeMintedTo: true,
+                    storeTimestamp: true,
+                    storeBlockNumber: true,
+                    stringData: stringData,
+                    intData: intData
+                })
             })
         );
 
@@ -54,8 +57,18 @@ contract RGroupPlaceholder is
         string calldata name_,
         string calldata bio
     ) public {
-        collection.writeString(StorageLocation.ENGINE, tokenId, "name", name_);
-        collection.writeString(StorageLocation.ENGINE, tokenId, "bio", bio);
+        collection.writeTokenString(
+            StorageLocation.ENGINE,
+            tokenId,
+            "name",
+            name_
+        );
+        collection.writeTokenString(
+            StorageLocation.ENGINE,
+            tokenId,
+            "bio",
+            bio
+        );
     }
 
     function _computeName(IShellFramework nft, uint256 tokenId)
@@ -64,7 +77,7 @@ contract RGroupPlaceholder is
         override
         returns (string memory)
     {
-        string memory name_ = nft.readString(
+        string memory name_ = nft.readTokenString(
             StorageLocation.ENGINE,
             tokenId,
             "name"
@@ -78,22 +91,22 @@ contract RGroupPlaceholder is
         override
         returns (string memory)
     {
-        string memory name_ = nft.readString(
+        string memory name_ = nft.readTokenString(
             StorageLocation.ENGINE,
             tokenId,
             "name"
         );
-        string memory bio = nft.readString(
+        string memory bio = nft.readTokenString(
             StorageLocation.ENGINE,
             tokenId,
             "bio"
         );
-        uint256 mintedTo = nft.readInt(
+        uint256 mintedTo = nft.readTokenInt(
             StorageLocation.FRAMEWORK,
             tokenId,
             "mintedTo"
         );
-        uint256 timestamp = nft.readInt(
+        uint256 timestamp = nft.readTokenInt(
             StorageLocation.FRAMEWORK,
             tokenId,
             "timestamp"
@@ -147,6 +160,16 @@ contract RGroupPlaceholder is
     }
 
     function afterInstallEngine(IShellFramework collection) external view {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId),
+            "must implement IShellERC721"
+        );
+    }
+
+    function afterInstallEngine(IShellFramework collection, uint256)
+        external
+        view
+    {
         require(
             collection.supportsInterface(type(IShellERC721).interfaceId),
             "must implement IShellERC721"

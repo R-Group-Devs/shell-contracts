@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IEngine} from "../../IEngine.sol";
 import {ISquadzEngine} from "./ISquadzEngine.sol";
-import {IShellFramework} from "../../IShellFramework.sol";
+import {IShellFramework, MintEntry} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
 import {IPersonalizedDescriptor} from "./IPersonalizedDescriptor.sol";
 import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
@@ -45,6 +45,10 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         return;
     }
 
+    function afterInstallEngine(IShellFramework, uint256) external pure {
+        revert("cannot install engine");
+    }
+
     // Get the name for this engine
     function getEngineName() external pure returns (string memory) {
         return "SQUADZ v0.0.0";
@@ -65,8 +69,8 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         }
         if (address(descriptor) == address(0)) descriptor = defaultDescriptor;
         return descriptor.getTokenURI(
-            address(collection), 
-            tokenId, 
+            address(collection),
+            tokenId,
             token.ownerOf(tokenId)
         );
     }
@@ -94,7 +98,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     function setDescriptor(IShellERC721 collection, address descriptorAddress, bool admin) external {
         require(
-            collection.owner() == msg.sender, 
+            collection.owner() == msg.sender,
             "SQUADZ: sender not collection owner"
         );
         _setDescriptorAddress(collection, descriptorAddress, admin);
@@ -135,10 +139,10 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     function isAdminToken(IShellERC721 collection, uint256 tokenId) public view returns (bool) {
         require(
-            collection.ownerOf(tokenId) != address(0), 
+            collection.ownerOf(tokenId) != address(0),
             "SQUADZ: token doesn't exist"
         );
-        return collection.readInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
+        return collection.readCollectionInt(StorageLocation.MINT_DATA, _adminTokenKey(tokenId)) == 1;
     }
 
     function isAdmin(IShellFramework collection, address address_) public view returns (bool) {
@@ -173,16 +177,19 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
           // _incrementAdminTokenCount(collection, to); beforeTokenTransfer covers this?
         }
 
-        uint256 tokenId = collection.mint(
-            to,
-            // minimal storage for minimal gas cost
-            MintOptions({
-                storeEngine: false,
-                storeMintedTo: true,
-                storeTimestamp: false,
-                storeBlockNumber: false,
-                stringData: stringData,
-                intData: intData
+        uint256 tokenId = collection.mint(MintEntry({
+            to: to,
+            amount: 1,
+            options:
+                // minimal storage for minimal gas cost
+                MintOptions({
+                    storeEngine: false,
+                    storeMintedTo: true,
+                    storeTimestamp: false,
+                    storeBlockNumber: false,
+                    stringData: stringData,
+                    intData: intData
+                })
             })
         );
 
@@ -196,15 +203,15 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
             "SQUADZ: invalid descriptor address"
         );
         if (admin == true) {
-            collection.writeInt(
-                StorageLocation.ENGINE, 
-                _adminDescriptorKey(), 
+            collection.writeCollectionInt(
+                StorageLocation.ENGINE,
+                _adminDescriptorKey(),
                 uint256(uint160(descriptorAddress))
             );
         } else {
-            collection.writeInt(
-                StorageLocation.ENGINE, 
-                _memberDescriptorKey(), 
+            collection.writeCollectionInt(
+                StorageLocation.ENGINE,
+                _memberDescriptorKey(),
                 uint256(uint160(descriptorAddress))
             );
         }
@@ -214,15 +221,15 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
         IPersonalizedDescriptor descriptor;
         if (admin == true) {
             descriptor = IPersonalizedDescriptor(address(uint160(
-                collection.readInt(
-                    StorageLocation.ENGINE, 
+                collection.readCollectionInt(
+                    StorageLocation.ENGINE,
                     _adminDescriptorKey()
                 )
             )));
         } else {
             descriptor = IPersonalizedDescriptor(address(uint160(
-                collection.readInt(
-                    StorageLocation.ENGINE, 
+                collection.readCollectionInt(
+                    StorageLocation.ENGINE,
                     _memberDescriptorKey()
                 )
             )));
@@ -250,11 +257,11 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
     }
 
     function _adminTokenCount(IShellFramework collection, address address_) private view returns (uint256) {
-        return collection.readInt(StorageLocation.ENGINE, _adminTokenCountKey(address_));
+        return collection.readCollectionInt(StorageLocation.ENGINE, _adminTokenCountKey(address_));
     }
 
     function _setAdminTokenCount(IShellFramework collection, address address_, uint256 value) private {
-        collection.writeInt(StorageLocation.ENGINE, _adminTokenCountKey(address_), value);
+        collection.writeCollectionInt(StorageLocation.ENGINE, _adminTokenCountKey(address_), value);
     }
 
     function _incrementAdminTokenCount(IShellFramework collection, address address_) private {

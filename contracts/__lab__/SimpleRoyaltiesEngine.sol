@@ -17,26 +17,26 @@ abstract contract SimpleRoyaltiesEngine is IEngine {
         uint256 salePrice
     ) external view returns (address receiver, uint256 royaltyAmount) {
         receiver = address(uint160(
-            collection.readInt(StorageLocation.ENGINE, _royaltyReceiverKey(collection))
+            collection.readCollectionInt(StorageLocation.ENGINE, _royaltyReceiverKey(collection))
         ));
-        uint256 basisPoints = collection.readInt(StorageLocation.ENGINE, _royaltyBasisKey(collection));
+        uint256 basisPoints = collection.readCollectionInt(StorageLocation.ENGINE, _royaltyBasisKey(collection));
         royaltyAmount = salePrice * basisPoints / 10000;
     }
 
     //===== Public Functions =====//
 
     function setRoyaltyInfo(
-        IShellFramework collection, 
-        address receiver, 
+        IShellFramework collection,
+        address receiver,
         uint256 royaltyBasisPoints
     ) public {
         require(msg.sender == collection.owner(), "SNS: msg.sender not collection owner");
-        collection.writeInt(
-            StorageLocation.ENGINE, 
-            _royaltyReceiverKey(collection), 
+        collection.writeCollectionInt(
+            StorageLocation.ENGINE,
+            _royaltyReceiverKey(collection),
             uint256(uint160(receiver))
         );
-        collection.writeInt(StorageLocation.ENGINE, _royaltyBasisKey(collection), royaltyBasisPoints);
+        collection.writeCollectionInt(StorageLocation.ENGINE, _royaltyBasisKey(collection), royaltyBasisPoints);
     }
 
     //===== Private Functions =====//
