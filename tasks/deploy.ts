@@ -2,10 +2,6 @@ import { task, types } from "hardhat/config";
 import { promises } from "fs";
 import { join } from "path";
 
-import { ShellFactory__factory } from "../typechain/factories/ShellFactory__factory";
-import { SNSEngine__factory } from "../typechain/factories/SNSEngine__factory";
-import { SimpleDescriptor__factory } from "../typechain/factories/SimpleDescriptor__factory";
-import { SquadzEngine__factory } from "../typechain/factories/SquadzEngine__factory";
 import { ShellFactory } from "../typechain/ShellFactory";
 import { SimpleDescriptor } from "../typechain/SimpleDescriptor";
 import { SNSEngine } from "../typechain/SNSEngine";
