@@ -4,6 +4,10 @@ pragma solidity ^0.8.0;
 import "../IEngine.sol";
 import {IShellFramework, StorageLocation} from "../IShellFramework.sol";
 
+/**
+ * Adds simple royalties into an engine: one royalties receiver with a stable percentage royalty in basis points
+ */
+
 abstract contract SimpleRoyaltiesEngine is IEngine {
     //===== External Functions =====//
 

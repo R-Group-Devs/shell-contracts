@@ -12,8 +12,8 @@ import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
  * Insert standard reference to shell here
  */
 
-// TODO IShellERC721 should probably have "is IOwnable, IERC721" if possible
-// b/c it isn't now, I have to import ShellERC721 and do ShellERC721(address(collection)).ownableMethod()
+// TODO use OnChainMetadataEngine for Squadz NFTs (implies other changes)
+// TODO public view for mintedTo address
 
 // TODO events
 
@@ -232,6 +232,7 @@ contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     //===== Private Functions =====//
 
+    // TODO I think there's token specific storage that can be used?
     function _adminTokenKey(uint256 tokenId) private pure returns (string memory) {
         return string(abi.encodePacked(tokenId, "ADMIN_TOKEN"));
     }

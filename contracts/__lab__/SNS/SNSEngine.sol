@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {NameResolverLike} from "./NameResolverLike.sol";
-import {RegistrarLike} from "./RegistrarLike.sol";
-import {ReverseRegistrarLike} from "./ReverseRegistrarLike.sol";
-import {ReverseRecordsLike} from "./ReverseRecordsLike.sol";
+import {INameResolver} from "./INameResolver.sol";
+import {IRegistrar} from "./IRegistrar.sol";
+import {IReverseRegistrar} from "./IReverseRegistrar.sol";
+import {IReverseRecords} from "./IReverseRecords.sol";
 import {IEngine} from "../../IEngine.sol";
 import {IShellFramework} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
@@ -24,9 +24,9 @@ import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
  * Matches the same pattern for reverse name look up for ENS.
  * 
  * Process to look up a name from an address:
- *   bytes32 node = ReverseRegistrarLike(reverseRegistrarAddr).node(address);
- *   address resolverAddr = RegistrarLike(registrarAddr)resolver(node);
- *   string name = NameResolverLike(resolverAddr).name(node);
+ *   bytes32 node = IReverseRegistrar(reverseRegistrarAddr).node(address);
+ *   address resolverAddr = IRegistrar(registrarAddr)resolver(node);
+ *   string name = INameResolver(resolverAddr).name(node);
  * 
  * Or call getNames(address[]) in ReverseRecords.sol, which does this for you
  * 
@@ -34,10 +34,10 @@ import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
  */
 
 contract SNS is 
-    NameResolverLike, 
-    RegistrarLike, 
-    ReverseRegistrarLike,
-    ReverseRecordsLike
+    INameResolver, 
+    IRegistrar, 
+    IReverseRegistrar,
+    IReverseRecords
 {
     //===== State =====//
 
