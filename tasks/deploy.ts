@@ -2,11 +2,6 @@ import { task, types } from "hardhat/config";
 import { promises } from "fs";
 import { join } from "path";
 
-import { ShellFactory } from "../typechain/ShellFactory";
-import { SimpleDescriptor } from "../typechain/SimpleDescriptor";
-import { SNSEngine } from "../typechain/SNSEngine";
-import { SquadzEngine } from "../typechain/SquadzEngine";
-
 const { readFile, writeFile } = promises;
 const filepath = join(__dirname, "./deployments.json");
 
@@ -101,18 +96,13 @@ task(
     await run("register", { address, implementation });
   });
 
-interface SquadzDeployment {
-  snsEngine: SNSEngine, 
-  squadzEngine: SquadzEngine
-}
-
 task("deploy:squadz", "Deploy and register SQUADZ")
   .addOptionalParam<boolean>("deployShellFactory", "Deploy new shell factory?", false, types.boolean)
   .addOptionalParam<string>("reverseRecords", "Existing name system for personalized descriptor")
-  .setAction(async ({ deployShellFactory, reverseRecords }, { ethers, run, network }): Promise<SquadzDeployment> => {
+  .setAction(async ({ deployShellFactory, reverseRecords }, { ethers, run, network }) => {
     // Deploy or get shell factory
     const entries = await readDeploymentsFile();
-    let shellFactory: ShellFactory
+    let shellFactory
     const entry = entries[network.name]
     const ShellFactory = await ethers.getContractFactory("ShellFactory");
     const implementationName = "shell-erc721-v1";
@@ -132,7 +122,7 @@ task("deploy:squadz", "Deploy and register SQUADZ")
     const owner = await signers[0].getAddress()
 
     const SNSEngine = await ethers.getContractFactory("SNSEngine");
-    let snsEngine: SNSEngine
+    let snsEngine
     if (reverseRecords === undefined) {
       // Deploy SNSEngine
       const snsEngineAddr = await run("deploy", { contract: "SNSEngine" });
@@ -149,12 +139,12 @@ task("deploy:squadz", "Deploy and register SQUADZ")
     
     // Deploy new Simple Descriptor pointing at reverse records address
     const descriptorFact = await ethers.getContractFactory("SimpleDescriptor");
-    const descriptor: SimpleDescriptor = await descriptorFact.deploy(reverseRecords);
+    const descriptor = await descriptorFact.deploy(reverseRecords);
     await descriptor.deployed();
 
     // Deploy new Squadz Engine with Simple Descriptor as default descriptor
     const squadzFact = await ethers.getContractFactory("SquadzEngine");
-    const squadzEngine: SquadzEngine = await squadzFact.deploy(descriptor.address);
+    const squadzEngine = await squadzFact.deploy(descriptor.address);
     await squadzEngine.deployed();
     
     console.log(`SQUADZ engine deployed to ${squadzEngine.address} on ${network.name}`);
