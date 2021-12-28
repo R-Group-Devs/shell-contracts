@@ -194,7 +194,7 @@ describe("ShellFactory", function () {
       await mockEngine.mint(collection.address, "Qhash");
     });
   });
-  describe("additional implementations", () => {
+  describe("implementations", () => {
     it("should work with erc1155 base implementation", async () => {
       const ShellERC1155 = await ethers.getContractFactory("ShellERC1155");
       const erc1155 = await ShellERC1155.deploy();
@@ -209,6 +209,7 @@ describe("ShellFactory", function () {
       const mined = await trx.wait();
       const address = mined.events?.[2].args?.collection;
       const collection = ShellERC1155.attach(address);
+      expect(await collection.supportsInterface("0xd9b67a26")).to.equal(true);
       await mockEngine.mint(collection.address, "hash");
       expect(await collection.uri("1")).to.match(/hash/);
     });
