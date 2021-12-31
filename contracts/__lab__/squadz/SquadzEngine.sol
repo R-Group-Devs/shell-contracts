@@ -7,6 +7,7 @@ import {IShellFramework, MintEntry} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
 import {IPersonalizedDescriptor} from "./IPersonalizedDescriptor.sol";
 import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
 /**
  * Insert standard reference to shell here
@@ -17,7 +18,7 @@ import {NoRoyaltiesEngine} from "../../engines/NoRoyaltiesEngine.sol";
 
 // NOTE "fan" NFTs can be implemented as an independent lego, since they grant no priviliges and should be a separate collection
 
-contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
+contract SquadzEngine is ISquadzEngine, NoRoyaltiesEngine {
 
     //===== Engine State =====//
 
@@ -39,16 +40,17 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
     // Called by the framework following an engine install. Can be used by the
     // engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
-    // Check IERC721Upgradeable as well, because this does not check inherited functions
+    // TODO Check IERC721Upgradeable as well, because this does not check inherited functions
     function afterInstallEngine(IShellFramework collection) external view {
         require(
-            collection.supportsInterface(type(IShellERC721).interfaceId),
+            collection.supportsInterface(type(IShellERC721).interfaceId) &&
+            collection.supportsInterface(type(IERC721Upgradeable).interfaceId),
             "SQUADZ: collection must support IShellERC721"
         );
     }
 
     function afterInstallEngine(IShellFramework, uint256) external pure {
-        revert("SQUADZ: no ERC1155 support");
+        revert("SQUADZ: cannot install engine to individual tokens");
     }
 
     // Get the name for this engine
@@ -64,9 +66,9 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
         IPersonalizedDescriptor descriptor;
         IShellERC721 token = IShellERC721(address(collection));
         if (isAdminToken(token, tokenId)) {
-            descriptor = _getDescriptor(collection, true);
+            descriptor = getDescriptor(collection, true);
         } else {
-            descriptor = _getDescriptor(collection, false);
+            descriptor = getDescriptor(collection, false);
         }
         if (address(descriptor) == address(0)) descriptor = defaultDescriptor;
         return descriptor.getTokenURI(
@@ -91,6 +93,7 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
         // if token is admin, increment and decrement adminTokenCount appropriately
         if (tokenIds.length == 0) return;
         require(tokenIds.length == amounts.length, "SQUADZ: array length mismatch");
+        // TODO if multiple tokens can be transferred at the same time, do a loop here
         if (isAdminToken(IShellERC721(address(collection)), tokenIds[0])) {
             _decrementAdminTokenCount(collection, from);
             _incrementAdminTokenCount(collection, to);
@@ -102,7 +105,24 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
             collection.owner() == msg.sender,
             "SQUADZ: sender not collection owner"
         );
-        _setDescriptorAddress(collection, descriptorAddress, admin);
+        IPersonalizedDescriptor descriptor = IPersonalizedDescriptor(descriptorAddress);
+        require(
+            descriptor.supportsInterface(type(IPersonalizedDescriptor).interfaceId),
+            "SQUADZ: invalid descriptor address"
+        );
+        if (admin == true) {
+            collection.writeCollectionInt(
+                StorageLocation.ENGINE,
+                _adminDescriptorKey(),
+                uint256(uint160(descriptorAddress))
+            );
+        } else {
+            collection.writeCollectionInt(
+                StorageLocation.ENGINE,
+                _memberDescriptorKey(),
+                uint256(uint160(descriptorAddress))
+            );
+        }
     }
 
     function mint(
@@ -150,11 +170,8 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
 
     //===== Public Functions =====//
 
+    // does not show a token exists (will return false for non-existant tokens)
     function isAdminToken(IShellERC721 collection, uint256 tokenId) public view returns (bool) {
-        require(
-            collection.ownerOf(tokenId) != address(0),
-            "SQUADZ: token doesn't exist"
-        );
         return collection.readTokenInt(StorageLocation.MINT_DATA, tokenId, _adminTokenKey()) == 1;
     }
 
@@ -174,6 +191,26 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
             interfaceId == type(ISquadzEngine).interfaceId;
     }
 
+    function getDescriptor(IShellFramework collection, bool admin) public view returns (IPersonalizedDescriptor) {
+        IPersonalizedDescriptor descriptor;
+        if (admin == true) {
+            descriptor = IPersonalizedDescriptor(address(uint160(
+                collection.readCollectionInt(
+                    StorageLocation.ENGINE,
+                    _adminDescriptorKey()
+                )
+            )));
+        } else {
+            descriptor = IPersonalizedDescriptor(address(uint160(
+                collection.readCollectionInt(
+                    StorageLocation.ENGINE,
+                    _memberDescriptorKey()
+                )
+            )));
+        }
+        return descriptor;
+    }
+
     //===== Internal Functions =====//
 
     function _mint(
@@ -187,7 +224,10 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
         if (admin == true) {
           intData[0].key = _adminTokenKey();
           intData[0].value = 1;
-          // _incrementAdminTokenCount(collection, to); beforeTokenTransfer covers this?
+          // does beforeTokenTransfer cover this? 
+          // Nope, it doesn't, because the token won't be an admin token before it's been minted, 
+          // and beforeTokenTransfer gets called before the mint (i.e. transfer)
+          _incrementAdminTokenCount(collection, to);
         }
 
         uint256 tokenId = collection.mint(MintEntry({
@@ -207,47 +247,6 @@ contract SquadzEngine is ISquadzEngine,  NoRoyaltiesEngine {
         );
 
         return tokenId;
-    }
-
-    function _setDescriptorAddress(IShellERC721 collection, address descriptorAddress, bool admin) internal {
-        IPersonalizedDescriptor descriptor = IPersonalizedDescriptor(descriptorAddress);
-        require(
-            descriptor.supportsInterface(type(IPersonalizedDescriptor).interfaceId),
-            "SQUADZ: invalid descriptor address"
-        );
-        if (admin == true) {
-            collection.writeCollectionInt(
-                StorageLocation.ENGINE,
-                _adminDescriptorKey(),
-                uint256(uint160(descriptorAddress))
-            );
-        } else {
-            collection.writeCollectionInt(
-                StorageLocation.ENGINE,
-                _memberDescriptorKey(),
-                uint256(uint160(descriptorAddress))
-            );
-        }
-    }
-
-    function _getDescriptor(IShellFramework collection, bool admin) internal view returns (IPersonalizedDescriptor) {
-        IPersonalizedDescriptor descriptor;
-        if (admin == true) {
-            descriptor = IPersonalizedDescriptor(address(uint160(
-                collection.readCollectionInt(
-                    StorageLocation.ENGINE,
-                    _adminDescriptorKey()
-                )
-            )));
-        } else {
-            descriptor = IPersonalizedDescriptor(address(uint160(
-                collection.readCollectionInt(
-                    StorageLocation.ENGINE,
-                    _memberDescriptorKey()
-                )
-            )));
-        }
-        return descriptor;
     }
 
     //===== Private Functions =====//

@@ -49,7 +49,7 @@ const config: HardhatUserConfig = {
   },
 
   networks: {
-    eth: { url: process.env.ETH_URL || "", accounts },
+    eth: { url: process.env.MAINNET_URL || "", accounts },
     polygon: { url: process.env.POLYGON_URL || "", accounts },
     fantom: { url: process.env.FANTOM_URL || "", accounts },
     xdai: { url: process.env.XDAI_URL || "", accounts },
@@ -63,6 +63,14 @@ const config: HardhatUserConfig = {
       url: process.env.ARBITRUM_RINKEBY_URL || "",
       accounts,
     },
+
+    hardhat: {
+      // requires an archive node RPC connection (e.g. Alchemy)
+      forking: {
+        url: process.env.MAINNET_URL || "",
+        blockNumber: 13907512
+      }
+    }
   },
 
   gasReporter: {

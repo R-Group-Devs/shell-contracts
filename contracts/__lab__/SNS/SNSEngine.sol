@@ -1,15 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {INameResolver} from "./INameResolver.sol";
-import {IRegistrar} from "./IRegistrar.sol";
-import {IReverseRegistrar} from "./IReverseRegistrar.sol";
 import {IReverseRecords} from "./IReverseRecords.sol";
 import {IEngine} from "../../IEngine.sol";
 import {IShellFramework, MintEntry} from "../../IShellFramework.sol";
 import {IShellERC721, StringStorage, IntStorage, MintOptions, StorageLocation} from "../../IShellERC721.sol";
-// import {ShellFramework} from "../../ShellFramework.sol";
 import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
 /**
  * Insert standard reference to shell here
@@ -21,24 +18,11 @@ import {SimpleRoyaltiesEngine} from "../SimpleRoyaltiesEngine.sol";
  * A simple name system that partially matches the Ethereum Name System's interfaces without implementing the entire system.
  * Simply lets each address claim one name at a time.
  * Intended to be used to let NFTs display user names on Squadz pages on networks where ENS is unavailable (i.e. not mainnet).
- * Matches the same pattern for reverse name look up for ENS.
+ * Matches the same pattern for reverse name look up for ENS' reverse record contract (getNames)
  *
- * Process to look up a name from an address:
- *   bytes32 node = IReverseRegistrar(reverseRegistrarAddr).node(address);
- *   address resolverAddr = IRegistrar(registrarAddr)resolver(node);
- *   string name = INameResolver(resolverAddr).name(node);
- * 
- * Or call getNames(address[]) in ReverseRecords.sol, which does this for you
- *
- * For SNS, all replicated interfaces are on the main SNS address. With ENS, this is not the case.
  */
 
-contract SNS is 
-    INameResolver, 
-    IRegistrar, 
-    IReverseRegistrar,
-    IReverseRecords
-{
+contract SNS is IReverseRecords {
     //===== State =====//
 
     SNSEngine private immutable _engine;
@@ -53,35 +37,17 @@ contract SNS is
 
     //===== External Functions
 
-    // From ENS: https://github.com/ensdomains/reverse-records/blob/6ef80ba0a445b3f7cdff7819aaad1efbd8ad22fb/contracts/ReverseRecords.sol
-    function getNames(address[] calldata addresses) external view override returns (string[] memory r) {
-        r = new string[](addresses.length);
+    function getNames(address[] calldata addresses) external view override returns (string[] memory) {
+        string[] memory r = new string[](addresses.length);
         for(uint i = 0; i < addresses.length; i++) {
-            bytes32 node_ = node(addresses[i]);
-            string memory name_ = name(node_);
+            uint256 tokenId = _engine.getNameId(collection, addresses[i]);
+            string memory name_ = _engine.getNameFromTokenId(collection, tokenId);
             if (bytes(name_).length == 0) {
                 continue;
             }
             r[i] = name_;
         }
         return r;
-    }
-
-    function resolver(bytes32) external view override returns (address) {
-        // In ENS, this would not always be the same address
-        return address(this);
-    }
-
-    //===== Public Functions =====//
-
-    function name(bytes32 node_) public view override returns (string memory) {
-        uint256 tokenId = _engine.getNameId(collection, node_);
-        return _engine.getNameFromTokenId(collection, tokenId);
-    }
-
-    // From ENS: https://github.com/ensdomains/ens/blob/ff0f41747c05f1598973b0fe7ad0d9e09565dfcd/contracts/ReverseRegistrar.sol
-    function node(address addr) public view override returns (bytes32) {
-        return keccak256(abi.encodePacked(address(this), _engine.sha3HexAddress(addr)));
     }
 }
 
@@ -103,6 +69,11 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     // engine to block (by reverting) installation if needed.
     // The engine MUST assert msg.sender == collection address!!
     function afterInstallEngine(IShellFramework collection) external {
+        require(
+            collection.supportsInterface(type(IShellERC721).interfaceId) &&
+            collection.supportsInterface(type(IERC721Upgradeable).interfaceId),
+            "SNS: collection must support IShellERC721"
+        );
         require(msg.sender == address(collection), "SNS: msg.sender not collection");
         address snsAddr = address(new SNS(address(this), address(collection)));
         _setSNS(collection, snsAddr);
@@ -111,12 +82,13 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function afterInstallEngine(IShellFramework, uint256) external pure {
-        revert("cannot install engine");
+        revert("SNS: cannot install engine to individual tokens");
     }
 
     function mintAndSet(IShellERC721 collection, string calldata name_) external payable returns (uint256) {
-        uint256 tokenId = mint(collection, name_);
-        setName(collection, name_, msg.sender);
+        // TODO re-entrancy guard might be needed in someone can reenter on receiving an ERC721?
+        uint256 tokenId = mint(collection, msg.sender, name_);
+        setName(collection, msg.sender, name_);
         return tokenId;
     }
 
@@ -124,8 +96,7 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
         address owner = collection.owner();
         uint256 balance = getBalance(collection);
         _setBalance(collection, 0);
-        // TODO re-entrancy guard
-        // TODO can we get rid of the unused variable warning for data here?
+        // TODO re-entrancy guard to prevent re-entrancy on receiving ether?
         (bool sent, ) = owner.call{value: balance}("");
         require(sent, "Failed to send Ether");
         // TODO send WETH if ETH fails
@@ -179,20 +150,25 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
 
     //===== Public Functions
 
-    function mint(IShellERC721 collection, string calldata name_) public payable returns (uint256) {
+    function mint(IShellERC721 collection, address to, string calldata name_) public payable returns (uint256) {
         uint256 price = getPrice(collection);
         require(msg.value == price, "SNS: wrong msg.value");
         _setBalance(collection, getBalance(collection) + price);
-        return _mint(collection, msg.sender, name_);
+        return _mint(collection, to, name_);
     }
 
-    function setName(IShellERC721 collection, string calldata name_, address holder) public {
+    function setName(IShellERC721 collection, address holder, string calldata name_) public {
         uint256 tokenId = _getIdFromName(collection, name_);
         address tokenOwner = collection.ownerOf(tokenId);
         require(tokenOwner == holder, "SNS: name can only be set to its holder");
         address snsAddr = getSNSAddr(collection);
         require(snsAddr != address(0), "SNS: missing SNS address--call init");
-        _setName(collection, SNS(snsAddr).node(holder), tokenId);
+        _setName(collection, holder, tokenId);
+    }
+
+    function getNames(IShellERC721 collection, address[] calldata holders) public view returns (string[] memory) {
+        SNS sns = SNS(getSNSAddr(collection));
+        return sns.getNames(holders);
     }
 
     function getSNSAddr(IShellERC721 collection) public view returns (address) {
@@ -219,11 +195,11 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     }
 
     function getNameFromTokenId(IShellFramework collection, uint256 tokenId) public view returns (string memory) {
-        return collection.readCollectionString(StorageLocation.MINT_DATA, _idToNameKey(tokenId));
+        return collection.readTokenString(StorageLocation.MINT_DATA, tokenId, _idToNameKey());
     }
 
-    function getNameId(IShellFramework collection, bytes32 node) public view returns (uint256) {
-        return collection.readCollectionInt(StorageLocation.ENGINE, _nameKey(node));
+    function getNameId(IShellFramework collection, address holder) public view returns (uint256) {
+        return collection.readCollectionInt(StorageLocation.ENGINE, _nameKey(holder));
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -241,13 +217,10 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
     function _mint(IShellERC721 collection, address to, string calldata name_) private returns (uint256) {
         require(_getIdFromName(collection, name_) == 0, "SNS: name already minted");
 
-        uint256 nextTokenId = collection.nextTokenId();
         StringStorage[] memory stringData = new StringStorage[](1);
-        stringData[0].key = _idToNameKey(nextTokenId);
+        stringData[0].key = _idToNameKey();
         stringData[0].value = name_;
-        IntStorage[] memory intData = new IntStorage[](1);
-        intData[0].key = name_;
-        intData[0].value = nextTokenId;
+        IntStorage[] memory intData = new IntStorage[](0);
 
         uint256 tokenId = collection.mint(MintEntry({
             to: to,
@@ -264,6 +237,8 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
                 })
             })
         );
+
+        collection.writeCollectionInt(StorageLocation.ENGINE, name_, tokenId);
 
         return tokenId;
     }
@@ -298,19 +273,19 @@ contract SNSEngine is IEngine, SimpleRoyaltiesEngine {
         collection.writeCollectionInt(StorageLocation.ENGINE, _balanceKey(collection), value);
     }
 
-    function _nameKey(bytes32 node) private pure returns (string memory) {
-        return string(abi.encodePacked(node));
+    function _nameKey(address holder) private pure returns (string memory) {
+        return string(abi.encodePacked(holder));
     }
 
-    function _setName(IShellERC721 collection, bytes32 node, uint256 tokenId) private {
-        collection.writeCollectionInt(StorageLocation.ENGINE, _nameKey(node), tokenId);
+    function _setName(IShellERC721 collection, address holder, uint256 tokenId) private {
+        collection.writeCollectionInt(StorageLocation.ENGINE, _nameKey(holder), tokenId);
     }
 
-    function _idToNameKey(uint256 tokenId) private pure returns (string memory) {
-        return string(abi.encodePacked(tokenId));
+    function _idToNameKey() private pure returns (string memory) {
+        return "NAME";
     }
 
     function _getIdFromName(IShellERC721 collection, string calldata name_) private view returns (uint256) {
-        return collection.readCollectionInt(StorageLocation.MINT_DATA, name_);
+        return collection.readCollectionInt(StorageLocation.ENGINE, name_);
     }
 }

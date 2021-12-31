@@ -141,9 +141,9 @@ contract SimpleDescriptor is IPersonalizedDescriptor {
           '<svg width="300" height="400" viewBox="0 0 300 400" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="400" rx="140" fill="url(#paint0_radial_1_3)"/><style>.main { font: 24px sans-serif; fill:',
           color1,
           '; }</style><text x="50%" y="176px" text-anchor="middle" class="main">',
-          collection.name(),
-          '</text><text x="50%" y="236px" text-anchor="middle" class="main">',
           name,
+          '</text><text x="50%" y="206px" text-anchor="middle" class="main">',
+          collection.name(),
           '</text><text x="50%" y="236px" text-anchor="middle" class="main">',
           Strings.toString(tokenId)
         ));

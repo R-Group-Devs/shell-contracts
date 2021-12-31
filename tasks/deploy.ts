@@ -52,10 +52,14 @@ task("deploy", "Deploy a contract")
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
       console.log("verifying...");
-      await run("verify:verify", {
-        address: deployed.address,
-        constructorArguments: [],
-      });
+      try {
+        await run("verify:verify", {
+          address: deployed.address,
+          constructorArguments: [],
+        });
+      } catch (err) {
+        console.warn('Verfication error:', err)
+      }
     }
     
     return address;
@@ -142,11 +146,39 @@ task("deploy:squadz", "Deploy and register SQUADZ")
     const descriptor = await descriptorFact.deploy(reverseRecords);
     await descriptor.deployed();
 
+    console.log(`Simple Descriptor deployed to ${descriptor.address} on ${network.name}.`);
+
+    console.log("waiting 60 seconds before attempting to verify ...");
+    await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+
+    console.log("verifying...");
+    try {
+      await run("verify:verify", {
+        address: descriptor.address,
+        constructorArguments: [reverseRecords],
+      });
+    } catch (err) {
+      console.warn('Verfication error:', err)
+    }
+
     // Deploy new Squadz Engine with Simple Descriptor as default descriptor
     const squadzFact = await ethers.getContractFactory("SquadzEngine");
     const squadzEngine = await squadzFact.deploy(descriptor.address);
     await squadzEngine.deployed();
     
-    console.log(`SQUADZ engine deployed to ${squadzEngine.address} on ${network.name}`);
+    console.log(`SQUADZ engine deployed to ${squadzEngine.address} on ${network.name}.`);
+    console.log("waiting 60 seconds before attempting to verify ...");
+    await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+
+    console.log("verifying...");
+    try {
+      await run("verify:verify", {
+        address: squadzEngine.address,
+        constructorArguments: [descriptor.address],
+      });
+    } catch (err) {
+      console.warn('Verfication error:', err)
+    }
+
     return { snsEngine, squadzEngine }
   });
