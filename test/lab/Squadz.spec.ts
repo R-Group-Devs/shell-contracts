@@ -10,17 +10,20 @@
  * - fails if array lengths are different
  * - mints admin or non-admin tokens to each address
  * 
- * constructor
- * - address must support correct interface
- * 
- * afterInstallEngine
- * - only permits collections that fit correct interfaces
- * 
  * getTokenURI
  * - returns a string
  * - uses the adminDescriptor for admin tokens
  * - uses the non-admin descriptor for member tokens
  * - uses the default descriptor if no descriptor is set
+ * 
+ * mintedTo
+ * - retrieves correct mintedTo address
+ * 
+ * constructor
+ * - address must support correct interface
+ * 
+ * afterInstallEngine
+ * - only permits collections that fit correct interfaces
  * 
  * beforeTokenTransfer
  * - can only be called by collection
@@ -30,9 +33,6 @@
  * setDescriptor
  * - sets specified descriptor
  * - fails in descriptor interface not supported
- * 
- * mintedTo
- * - retrieves correct mintedTo address
  * 
  * isAdminToken
  * - returns true for admin tokens, false otherwise
@@ -57,7 +57,7 @@ import {
 } from "../../typechain";
 import { createCollection } from "./utils"
 
-describe("SimpleDescriptor", function () {
+describe("SquadzEngine", function () {
   // ---
   // fixtures
   // ---
@@ -102,6 +102,41 @@ describe("SimpleDescriptor", function () {
 
     squadzCollection = await createCollection("Test Squadz", "TSQD", squadzEngine.address, a0, factory, 2);
   });
+
+  it("records mintedTo correctly", async () => {
+    await mintAndCheck(squadzCollection, squadzEngine, a0, false);
+    const firstBalance = await squadzCollection.balanceOf(a0);
+    assert.equal(firstBalance.toNumber(), 1);
+
+    const firstMintedTo = await squadzEngine.mintedTo(squadzCollection.address, 1);
+    assert.equal(firstMintedTo, a0, "first mintedTo");
+
+    await squadzCollection.transferFrom(a0, a1, 1);
+    const secondBalance = await squadzCollection.balanceOf(a0);
+    assert.equal(secondBalance.toNumber(), 0);
+
+    const secondMintedTo = await squadzEngine.mintedTo(squadzCollection.address, 1);
+    assert.equal(secondMintedTo, a0, "second mintedTo");
+  });
+
+  it("fails if wrong interface submitted to constructor", async () => {
+    const SquadzEngine = await ethers.getContractFactory("SquadzEngine");
+    await expect(SquadzEngine.deploy(snsEngine.address))
+      .to.be.revertedWith("SQUADZ: invalid descriptor address");
+  });
+
+  it("only lets valid (ERC721) shell collections install", async () => {
+    const ShellERC1155 = await ethers.getContractFactory("ShellERC1155");
+    const erc1155 = await ShellERC1155.deploy();
+    await factory.registerImplementation("framework", erc1155.address);
+    await expect(factory.createCollection("Fail", "FLC", "framework", squadzEngine.address, a0))
+      .to.be.revertedWith("SQUADZ: collection must support IShellERC721");
+  });
+
+  it("only lets collection call beforeTokenTransfer", async () => {
+    await expect(squadzEngine.beforeTokenTransfer(squadzCollection.address, a0, a0, a1, [1], [1]))
+      .to.be.revertedWith("SQUADZ: beforeTokenTransfer caller not collection");
+  })
 
   describe("mint", function () {
     it("owner mints an admin token", async () => {
@@ -177,6 +212,12 @@ describe("SimpleDescriptor", function () {
 
       const uri1 = await squadzCollection.tokenURI(1);
       const uri2 = await simpleDescriptor.getTokenURI(squadzCollection.address, 1, a0);
+      const uri = uri1;
+      const [, jsonBase64] = uri.split(",");
+      const json = Buffer.from(jsonBase64, "base64").toString();
+      const [, imageBase64] = JSON.parse(json).image.split(",");
+      const svg = Buffer.from(imageBase64, "base64").toString()
+      console.log('SVG', svg);
       assert.equal(uri1, uri2, "uri");
     });
 
@@ -211,9 +252,7 @@ describe("SimpleDescriptor", function () {
       const uri2 = await mockDescriptor.getTokenURI(squadzCollection.address, 1, a0);
       assert.equal(uri1, uri2, "uri")
     });
-    
   });
-
 });
 
 async function mintAndCheck(

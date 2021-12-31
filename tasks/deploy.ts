@@ -137,6 +137,14 @@ task("deploy:squadz", "Deploy and register SQUADZ")
       if (rec.events === undefined) throw new Error('No event logs');
       const collectionAddr = rec.events[4].args?.collection;
       reverseRecords = await snsEngine.getSNSAddr(collectionAddr);
+      try {
+        await run("verify:verify", {
+          address: reverseRecords,
+          constructorArguments: [snsEngine.address, collectionAddr],
+        });
+      } catch (err) {
+        console.warn('Verfication error:', err);
+      }
     } else {
       snsEngine = SNSEngine.attach(reverseRecords);
     }
@@ -158,7 +166,7 @@ task("deploy:squadz", "Deploy and register SQUADZ")
         constructorArguments: [reverseRecords],
       });
     } catch (err) {
-      console.warn('Verfication error:', err)
+      console.warn('Verfication error:', err);
     }
 
     // Deploy new Squadz Engine with Simple Descriptor as default descriptor
