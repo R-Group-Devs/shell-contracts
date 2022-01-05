@@ -14,7 +14,9 @@ enum StorageLocation {
     // set by the engine during minting, immutable
     MINT_DATA,
     // set by the framework during minting or collection creation, immutable
-    FRAMEWORK
+    FRAMEWORK,
+    // set by the engine for fork 0 at any time, mutable
+    CANONICAL
 }
 
 // publish flag

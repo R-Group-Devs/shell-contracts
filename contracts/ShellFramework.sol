@@ -250,26 +250,33 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     }
 
     function _validateCollectionWrite(StorageLocation location) private view {
-        if (location != StorageLocation.ENGINE) {
-            revert WriteNotAllowed();
+        if (location == StorageLocation.ENGINE) {
+            if (msg.sender != address(getCollectionEngine())) {
+                revert SenderNotEngine();
+            }
+            return; // made it
         }
 
-        if (msg.sender != address(getCollectionEngine())) {
-            revert SenderNotEngine();
-        }
+        revert WriteNotAllowed();
     }
 
     function _validateTokenWrite(StorageLocation location, uint256 tokenId)
         private
         view
     {
-        if (location != StorageLocation.ENGINE) {
-            revert WriteNotAllowed();
+        if (location == StorageLocation.ENGINE) {
+            if (msg.sender != address(getTokenEngine(tokenId))) {
+                revert SenderNotEngine();
+            }
+            return; // made it
+        } else if (location == StorageLocation.CANONICAL) {
+            if (msg.sender != address(getCollectionEngine())) {
+                revert SenderNotEngine();
+            }
+            return; // made it
         }
 
-        if (msg.sender != address(getTokenEngine(tokenId))) {
-            revert SenderNotEngine();
-        }
+        revert WriteNotAllowed();
     }
 
     // ---
