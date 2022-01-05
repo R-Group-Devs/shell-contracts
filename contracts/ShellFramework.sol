@@ -2,15 +2,17 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./libraries/Ownable.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "./IShellFramework.sol";
-import "./IShellERC1155.sol";
 
 // Abstract implementation of the shell framework interface -- can be used as a
 // base for all shell collections
-abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
-    // Currently installed engine
-    IEngine public installedEngine;
+abstract contract ShellFramework is IShellFramework, Initializable {
+    // fork data
+    mapping(uint256 => Fork) private _forks;
+
+    // token id -> fork id
+    mapping(uint256 => uint256) private _tokenForks;
 
     // all stored strings
     mapping(bytes32 => string) private _stringStorage;
@@ -18,8 +20,11 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     // all stored ints
     mapping(bytes32 => uint256) private _intStorage;
 
-    // per-token engine overrides
-    mapping(uint256 => IEngine) private _engineOverrides;
+    // token id serial number
+    uint256 public nextTokenId;
+
+    // fork id serial number
+    uint256 public nextForkId;
 
     // ensure that the deployed implementation cannot be initialized after
     // deployment. Clones do not trigger the constructor but are manually
@@ -29,44 +34,113 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
 
     // used to initialize the clone
     // solhint-disable-next-line func-name-mixedcase
-    function __ShellFramework_init(IEngine engine, address owner)
+    function __ShellFramework_init(IEngine engine, address owner_)
         internal
         onlyInitializing
     {
-        _transferOwnership(owner);
-        _installEngine(engine);
+        nextTokenId = 1;
+        nextForkId = 1;
+
+        // not using createFork for initial fork
+        _forks[0].engine = engine;
+        _forks[0].owner = owner_;
+        engine.afterEngineSet(this, 0);
+        emit ForkCreated(0, engine, owner_);
     }
 
     // ---
-    // NFT owner functionaltiy
+    // Fork functionality
     // ---
 
-    function _installTokenEngine(uint256 tokenId, IEngine engine) internal {
-        require(
-            engine.supportsInterface(type(IEngine).interfaceId),
-            "shell: invalid engine"
-        );
-        _engineOverrides[tokenId] = engine;
-        engine.afterInstallEngine(this, tokenId);
-        emit TokenEngineInstalled(tokenId, engine);
+    function createFork(
+        IEngine engine,
+        address owner_,
+        uint256[] calldata tokenIds
+    ) external returns (uint256) {
+        if (
+            !ERC165Checker.supportsInterface(
+                address(engine),
+                type(IEngine).interfaceId
+            )
+        ) {
+            revert InvalidEngine();
+        }
+
+        uint256 forkId = nextForkId++;
+        _forks[forkId].engine = engine;
+        _forks[forkId].owner = owner_;
+        emit ForkCreated(forkId, engine, owner_);
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            // calling virtual method to ensure ownership / implementation
+            // checks are handled in the token model contract
+            forkToken(tokenIds[i], forkId);
+        }
+
+        engine.afterEngineSet(this, forkId);
+
+        return forkId;
+    }
+
+    function setForkEngine(uint256 forkId, IEngine engine) external {
+        if (msg.sender != _forks[forkId].owner) {
+            revert SenderNotForkOwner();
+        }
+
+        if (
+            !ERC165Checker.supportsInterface(
+                address(engine),
+                type(IEngine).interfaceId
+            )
+        ) {
+            revert InvalidEngine();
+        }
+
+        _forks[forkId].engine = engine;
+        emit ForkEngineUpdated(forkId, engine);
+        engine.afterEngineSet(this, forkId);
+    }
+
+    function setForkOwner(uint256 forkId, address owner_) external {
+        if (msg.sender != _forks[forkId].owner) {
+            revert SenderNotForkOwner();
+        }
+
+        _forks[forkId].owner = owner_;
+        emit ForkOwnerUpdated(forkId, owner_);
+    }
+
+    // should be implemented in the token models, should assert msg.sender is
+    // token owner
+    function forkToken(uint256 tokenId, uint256 forkId) public virtual;
+
+    function _forkToken(uint256 tokenId, uint256 forkId) internal {
+        _tokenForks[tokenId] = forkId;
+        emit TokenForked(tokenId, forkId);
     }
 
     // ---
-    // Collection owner (admin) functionaltiy
+    // Fork views
     // ---
 
-    function installEngine(IEngine engine) external onlyOwner {
-        _installEngine(engine);
+    function owner() external view returns (address) {
+        return _forks[0].owner; // collection owner = fork 0 owner
     }
 
-    function _installEngine(IEngine engine) private {
-        require(
-            engine.supportsInterface(type(IEngine).interfaceId),
-            "shell: invalid engine"
-        );
-        installedEngine = engine;
-        engine.afterInstallEngine(this);
-        emit EngineInstalled(engine);
+    function getFork(uint256 forkId) public view returns (Fork memory) {
+        return _forks[forkId];
+    }
+
+    function getTokenForkId(uint256 tokenId) public view returns (uint256) {
+        return _tokenForks[tokenId];
+    }
+
+    function getTokenEngine(uint256 tokenId) public view returns (IEngine) {
+        return _forks[_tokenForks[tokenId]].engine;
+    }
+
+    function getCollectionEngine() public view returns (IEngine) {
+        return _forks[0].engine;
     }
 
     // ---
@@ -103,7 +177,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "engine",
-                uint256(uint160(address(installedEngine)))
+                uint256(uint160(address(getCollectionEngine())))
             );
         }
         if (entry.options.storeMintedTo) {
@@ -176,33 +250,26 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     }
 
     function _validateCollectionWrite(StorageLocation location) private view {
-        require(
-            location == StorageLocation.ENGINE,
-            "shell: invalid storage write"
-        );
-        require(msg.sender == address(installedEngine), "shell: not engine");
+        if (location != StorageLocation.ENGINE) {
+            revert WriteNotAllowed();
+        }
+
+        if (msg.sender != address(getCollectionEngine())) {
+            revert SenderNotEngine();
+        }
     }
 
     function _validateTokenWrite(StorageLocation location, uint256 tokenId)
         private
         view
     {
-        require(
-            location == StorageLocation.ENGINE,
-            "shell: invalid storage write"
-        );
-
-        // if override is set, must match msg sender
-        IEngine ownerOverride = _engineOverrides[tokenId];
-        bool isOverridden = ownerOverride != IEngine(address(0));
-
-        if (isOverridden && msg.sender == address(ownerOverride)) {
-            return;
-        } else if (msg.sender == address(installedEngine)) {
-            return;
+        if (location != StorageLocation.ENGINE) {
+            revert WriteNotAllowed();
         }
 
-        revert("shell: not engine");
+        if (msg.sender != address(getTokenEngine(tokenId))) {
+            revert SenderNotEngine();
+        }
     }
 
     // ---
@@ -300,13 +367,15 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
     function _validateCollectionPublish(PublishChannel channel) private view {
         if (channel == PublishChannel.PUBLIC) {
             return;
-        } else if (channel == PublishChannel.ENGINE) {
-            require(
-                msg.sender == address(installedEngine),
-                "shell: not engine"
-            );
         }
-        revert("shell: invalid publish");
+
+        if (channel != PublishChannel.ENGINE) {
+            revert PublishNotAllowed();
+        }
+
+        if (msg.sender != address(getCollectionEngine())) {
+            revert SenderNotEngine();
+        }
     }
 
     function _validateTokenPublish(PublishChannel channel, uint256 tokenId)
@@ -316,21 +385,14 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         if (channel == PublishChannel.PUBLIC) {
             return;
         }
-        if (channel == PublishChannel.ENGINE) {
-            // if override is set, must match msg sender
-            IEngine ownerOverride = _engineOverrides[tokenId];
-            bool isOverridden = ownerOverride != IEngine(address(0));
 
-            if (isOverridden && msg.sender == address(ownerOverride)) {
-                return;
-            } else if (msg.sender == address(installedEngine)) {
-                return;
-            }
-
-            revert("shell: not engine");
+        if (channel != PublishChannel.ENGINE) {
+            revert PublishNotAllowed();
         }
 
-        revert("shell: invalid publish");
+        if (msg.sender != address(getTokenEngine(tokenId))) {
+            revert SenderNotEngine();
+        }
     }
 
     // ---
@@ -386,7 +448,7 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         view
         returns (address receiver, uint256 royaltyAmount)
     {
-        return installedEngine.getRoyaltyInfo(this, tokenId, salePrice);
+        return getTokenEngine(tokenId).getRoyaltyInfo(this, tokenId, salePrice);
     }
 
     // ---
@@ -397,7 +459,6 @@ abstract contract ShellFramework is IShellFramework, Initializable, Ownable {
         public
         view
         virtual
-        override
         returns (bool)
     {
         return

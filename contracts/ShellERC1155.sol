@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "./ShellFramework.sol";
-import "./IShellERC1155.sol";
 
-contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
-    uint256 public nextTokenId;
+contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
+    // cant fork 1155s
+    error ForkingNotAllowed();
 
     string public name;
 
@@ -20,12 +20,20 @@ contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
     ) external initializer {
         // intentionally not init-ing anything here from the 1155, only thing it
         // sets is _uri which we arent using
-        name = name_;
-        symbol = symbol_;
 
         __ShellFramework_init(engine, owner_);
 
-        nextTokenId = 1;
+        name = name_;
+        symbol = symbol_;
+    }
+
+    // ---
+    // Framework functionality
+    // ---
+
+    // Set the fork of a specific token. Must be token owner
+    function forkToken(uint256, uint256) public pure override {
+        revert ForkingNotAllowed();
     }
 
     // ---
@@ -33,15 +41,7 @@ contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
     // ---
 
     function uri(uint256 tokenId) public view override returns (string memory) {
-        return installedEngine.getTokenURI(this, tokenId);
-    }
-
-    // ---
-    // NFT owner functionality
-    // ---
-
-    function installTokenEngine(uint256, IEngine) external pure {
-        revert("shell: cannot install token engine");
+        return getTokenEngine(tokenId).getTokenURI(this, tokenId);
     }
 
     // ---
@@ -49,7 +49,10 @@ contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
     // ---
 
     function mint(MintEntry calldata entry) external returns (uint256) {
-        require(msg.sender == address(installedEngine), "shell: not engine");
+        if (msg.sender != address(getCollectionEngine())) {
+            revert SenderNotEngine();
+        }
+
         return _mint(entry);
     }
 
@@ -57,7 +60,10 @@ contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
         external
         returns (uint256[] memory)
     {
-        require(msg.sender == address(installedEngine), "shell: not engine");
+        if (msg.sender != address(getCollectionEngine())) {
+            revert SenderNotEngine();
+        }
+
         uint256[] memory tokenIds = new uint256[](entries.length);
 
         for (uint256 i = 0; i < entries.length; i++) {
@@ -81,12 +87,11 @@ contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ShellFramework, IShellERC1155, ERC1155Upgradeable)
+        override(ShellFramework, ERC1155Upgradeable)
         returns (bool)
     {
         return
             ShellFramework.supportsInterface(interfaceId) ||
-            interfaceId == type(IShellERC1155).interfaceId ||
             ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
@@ -102,13 +107,17 @@ contract ShellERC1155 is ShellFramework, IShellERC1155, ERC1155Upgradeable {
         uint256[] memory amounts,
         bytes memory
     ) internal virtual override {
-        installedEngine.beforeTokenTransfer(
-            this,
-            operator,
-            from,
-            to,
-            ids,
-            amounts
-        );
+        for (uint256 i = 0; i < ids.length; i++) {
+            uint256 tokenId = ids[i];
+            IEngine engine = getTokenEngine(tokenId);
+            engine.beforeTokenTransfer(
+                this,
+                operator,
+                from,
+                to,
+                tokenId,
+                amounts[i]
+            );
+        }
     }
 }

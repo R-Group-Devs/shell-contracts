@@ -16,14 +16,17 @@ contract ShellFactory is IShellFactory, Ownable {
         string calldata name,
         IShellFramework implementation
     ) external onlyOwner {
-        require(
-            implementations[name] == IShellFramework(address(0)),
-            "shell: implementation exists"
+        if (implementations[name] != IShellFramework(address(0))) {
+            revert ImplementationExists();
+        }
+
+        bool isValid = implementation.supportsInterface(
+            type(IShellFramework).interfaceId
         );
-        require(
-            implementation.supportsInterface(type(IShellFramework).interfaceId),
-            "shell: invalid implementation"
-        );
+        if (!isValid) {
+            revert InvalidImplementation();
+        }
+
         implementations[name] = implementation;
         emit ImplementationRegistered(name, implementation);
     }
@@ -36,15 +39,16 @@ contract ShellFactory is IShellFactory, Ownable {
         address owner
     ) external returns (IShellFramework) {
         IShellFramework implementation = implementations[implementationName];
-        require(
-            implementation != IShellFramework(address(0)),
-            "shell: implementation not found"
-        );
+        if (implementation == IShellFramework(address(0))) {
+            revert ImplementationNotFound();
+        }
+
         IShellFramework clone = IShellFramework(
             Clones.clone(address(implementation))
         );
         clone.initialize(name, symbol, engine, owner);
         emit CollectionCreated(clone, implementation);
+
         return clone;
     }
 }

@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "./IShellFramework.sol";
 
 // Required interface for framework engines
-// interfaceId = 0x805590d2
+// interfaceId = ??????
 interface IEngine is IERC165 {
     // Get the name for this engine
-    function getEngineName() external pure returns (string memory);
+    function name() external pure returns (string memory);
 
     // Called by the framework to resolve a response for tokenURI method
     function getTokenURI(IShellFramework collection, uint256 tokenId)
@@ -34,21 +34,16 @@ interface IEngine is IERC165 {
         address operator,
         address from,
         address to,
-        uint256[] memory tokenIds,
-        uint256[] memory amounts
+        uint256 tokenId,
+        uint256 amount
     ) external;
 
-    // Called by the framework following an engine install to a collection. Can
-    // be used by the engine to block (by reverting) installation if needed.
+    // Called by the framework whenever an engine is set on a fork, including
+    // the collection (fork id = 0). Can be used by engine developers to prevent
+    // an engine from being installed in a collection or non-canonical fork if
+    // desired
     //
     // The engine MUST assert msg.sender == collection address!!
     //
-    function afterInstallEngine(IShellFramework collection) external;
-
-    // Called by the framework following an engine install to specific token.
-    // Can be used by the engine to block (by reverting) installation if needed.
-    //
-    // The engine MUST assert msg.sender == collection address!!
-    //
-    function afterInstallEngine(IShellFramework collection, uint256 tokenId) external;
+    function afterEngineSet(IShellFramework collection, uint256 forkId) external;
 }

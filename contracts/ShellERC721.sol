@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "./ShellFramework.sol";
-import "./IShellERC721.sol";
 
-contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
-    uint256 public nextTokenId;
+contract ShellERC721 is ShellFramework, ERC721Upgradeable {
+    // for ERC-721s, mint amount must be 1
+    error InvalidMintAmount();
 
     function initialize(
         string calldata name_,
@@ -19,8 +19,6 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
         __ERC721_init_unchained(name_, symbol_);
 
         __ShellFramework_init(engine, owner_);
-
-        nextTokenId = 1;
     }
 
     // ---
@@ -55,16 +53,20 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
         override
         returns (string memory)
     {
-        return installedEngine.getTokenURI(this, tokenId);
+        return getTokenEngine(tokenId).getTokenURI(this, tokenId);
     }
 
     // ---
-    // NFT owner functionality
+    // Framework functionality
     // ---
 
-    function installTokenEngine(uint256 tokenId, IEngine engine) external {
-        require(msg.sender == ownerOf(tokenId), "shell: not nft owner");
-        _installTokenEngine(tokenId, engine);
+    // Set the fork of a specific token. Must be token owner
+    function forkToken(uint256 tokenId, uint256 forkId) public override {
+        if (msg.sender != ownerOf(tokenId)) {
+            revert SenderNotTokenOwner();
+        }
+
+        _forkToken(tokenId, forkId);
     }
 
     // ---
@@ -72,8 +74,28 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     // ---
 
     function mint(MintEntry calldata entry) external returns (uint256) {
-        require(msg.sender == address(installedEngine), "shell: not engine");
+        if (msg.sender != address(getCollectionEngine())) {
+            revert SenderNotEngine();
+        }
+
         return _mint(entry);
+    }
+
+    function batchMint(MintEntry[] calldata entries)
+        external
+        returns (uint256[] memory)
+    {
+        if (msg.sender != address(getCollectionEngine())) {
+            revert SenderNotEngine();
+        }
+
+        uint256[] memory tokenIds = new uint256[](entries.length);
+
+        for (uint256 i = 0; i < entries.length; i++) {
+            tokenIds[i] = _mint(entries[i]);
+        }
+
+        return tokenIds;
     }
 
     function _mint(MintEntry calldata entry) internal returns (uint256) {
@@ -84,20 +106,6 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
         return tokenId;
     }
 
-    function batchMint(MintEntry[] calldata entries)
-        external
-        returns (uint256[] memory)
-    {
-        require(msg.sender == address(installedEngine), "shell: not engine");
-        uint256[] memory tokenIds = new uint256[](entries.length);
-
-        for (uint256 i = 0; i < entries.length; i++) {
-            tokenIds[i] = _mint(entries[i]);
-        }
-
-        return tokenIds;
-    }
-
     // ---
     // Introspection
     // ---
@@ -105,12 +113,11 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ShellFramework, IShellERC721, ERC721Upgradeable)
+        override(ShellFramework, ERC721Upgradeable)
         returns (bool)
     {
         return
             ShellFramework.supportsInterface(interfaceId) ||
-            interfaceId == type(IShellERC721).interfaceId ||
             ERC721Upgradeable.supportsInterface(interfaceId);
     }
 
@@ -123,17 +130,13 @@ contract ShellERC721 is ShellFramework, IShellERC721, ERC721Upgradeable {
         address to,
         uint256 tokenId
     ) internal override {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
-        tokenIds[0] = tokenId;
-        amounts[0] = 1;
-        installedEngine.beforeTokenTransfer(
+        getTokenEngine(tokenId).beforeTokenTransfer(
             this,
             msg.sender,
             from,
             to,
-            tokenIds,
-            amounts
+            tokenId,
+            1
         );
     }
 }

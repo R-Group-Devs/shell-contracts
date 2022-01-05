@@ -38,6 +38,7 @@ struct IntStorage {
     uint256 value;
 }
 
+// data provided when minting a new token
 struct MintEntry {
     address to;
     uint256 amount;
@@ -54,20 +55,54 @@ struct MintOptions {
     IntStorage[] intData;
 }
 
+// Information about a fork
+struct Fork {
+    IEngine engine;
+    address owner;
+}
+
 // Interface for every collection launched by shell.
 // Concrete implementations must return true on ERC165 checks for this interface
 // (as well as erc165 / 2981)
-// interfaceId = 0x46877bbc
-interface IShellFramework is IERC165, IERC2981, IOwnable {
+// interfaceId = TBD
+interface IShellFramework is IERC165, IERC2981 {
+    // ---
+    // Framework errors
+    // ---
+
+    // an engine was provided that did no pass the expected erc165 checks
+    error InvalidEngine();
+
+    // a write was attempted that is not allowed
+    error WriteNotAllowed();
+
+    // a publish was attempted that is not allowed
+    error PublishNotAllowed();
+
+    // an operation was attempted but msg.sender was not the expected engine
+    error SenderNotEngine();
+
+    // an operation was attempted but msg.sender was not the fork owner
+    error SenderNotForkOwner();
+
+    // an operation was attempted but msg.sender was not the token owner
+    error SenderNotTokenOwner();
+
     // ---
     // Framework events
     // ---
 
-    // A new engine was installed
-    event EngineInstalled(IEngine engine);
+    // a fork was created
+    event ForkCreated(uint256 forkId, IEngine engine, address owner);
 
-    // A new engine was installed for a token
-    event TokenEngineInstalled(uint256 tokenId, IEngine engine);
+    // a fork had a new engine installed
+    event ForkEngineUpdated(uint256 forkId, IEngine engine);
+
+    // a fork had a new owner set
+    event ForkOwnerUpdated(uint256 forkId, address owner);
+
+    // a token has been set to a new fork
+    event TokenForked(uint256 tokenId, uint256 forkId);
 
     // ---
     // Storage events
@@ -114,19 +149,19 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
         string value
     );
 
+    // A uint256 was published from the collection
+    event CollectionIntPublished(
+        PublishChannel location,
+        string key,
+        uint256 value
+    );
+
     // A string was published from a token
     event TokenStringPublished(
         PublishChannel location,
         uint256 tokenId,
         string key,
         string value
-    );
-
-    // A uint256 was published from the collection
-    event CollectionIntPublished(
-        PublishChannel location,
-        string key,
-        uint256 value
     );
 
     // A uint256 was published from a token
@@ -153,6 +188,9 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // General collection info / metadata
     // ---
 
+    // collection owner (fork 0 owner)
+    function owner() external view returns (address);
+
     // collection name
     function name() external view returns (string memory);
 
@@ -162,31 +200,54 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // next token id serial number
     function nextTokenId() external view returns (uint256);
 
-    // ---
-    // NFT owner functionaltiy
-    // ---
-
-    // override a token's engine. Only callable by NFT owner
-    function installTokenEngine(uint256 tokenId, IEngine engine) external;
+    // next fork id serial number
+    function nextForkId() external view returns (uint256);
 
     // ---
-    // Collection owner (admin) functionaltiy
+    // Fork functionality
     // ---
 
-    // Hot swap the collection's engine. Only callable by contract owner
-    function installEngine(IEngine engine) external;
+    // Create a new fork with a specific engine, fork all the tokenIds to the
+    // new engine, and return the fork ID
+    function createFork(
+        IEngine engine,
+        address owner,
+        uint256[] calldata tokenIds
+    ) external returns (uint256);
 
-    // the currently installed engine for this collection
-    function installedEngine() external view returns (IEngine);
+    // Set the engine for a specific fork. Must be fork owner
+    function setForkEngine(uint256 forkId, IEngine engine) external;
+
+    // Set the fork owner. Must be fork owner
+    function setForkOwner(uint256 forkId, address owner) external;
+
+    // Set the fork of a specific token. Must be token owner
+    function forkToken(uint256 tokenId, uint256 forkId) external;
+
+    // ---
+    // Fork views
+    // ---
+
+    // Get information about a fork
+    function getFork(uint256 forkId) external view returns (Fork memory);
+
+    // Get a token's fork ID
+    function getTokenForkId(uint256 tokenId) external view returns (uint256);
+
+    // Get a token's engine
+    function getTokenEngine(uint256 tokenId) external view returns (IEngine);
+
+    // Get the collection / canonical engine
+    function getCollectionEngine() external view returns (IEngine);
 
     // ---
     // Engine functionality
     // ---
 
-    // mint new tokens. Only callable by engine
+    // mint new tokens. Only callable by collection engine
     function mint(MintEntry calldata entry) external returns (uint256);
 
-    // mint new tokens. Only callable by engine
+    // mint new tokens. Only callable by collection engine
     function batchMint(MintEntry[] calldata entries)
         external
         returns (uint256[] memory);
@@ -195,14 +256,21 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // Storage writes
     // ---
 
-    // Write a string to collection storage
+    // Write a string to collection storage. Only callable by collection engine
     function writeCollectionString(
         StorageLocation location,
         string calldata key,
         string calldata value
     ) external;
 
-    // Write a string to token storage
+    // Write a string to collection storage. Only callable by collection engine
+    function writeCollectionInt(
+        StorageLocation location,
+        string calldata key,
+        uint256 value
+    ) external;
+
+    // Write a string to token storage. Only callable by token engine
     function writeTokenString(
         StorageLocation location,
         uint256 tokenId,
@@ -210,14 +278,7 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
         string calldata value
     ) external;
 
-    // Write a string to collection storage
-    function writeCollectionInt(
-        StorageLocation location,
-        string calldata key,
-        uint256 value
-    ) external;
-
-    // Write a string to token storage
+    // Write a string to token storage. Only callable by token engine
     function writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
@@ -229,14 +290,21 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
     // Event publishing
     // ---
 
-    // publish a string from the collection
+    // publish a string from the collection. Only callable by collection engine
     function publishCollectionString(
         PublishChannel channel,
         string calldata topic,
         string calldata value
     ) external;
 
-    // publish a string from a specific token
+    // Publish a uint256 from the collection. Only callable by collection engine
+    function publishCollectionInt(
+        PublishChannel channel,
+        string calldata topic,
+        uint256 value
+    ) external;
+
+    // Publish a string from a specific token. Only callable by token engine
     function publishTokenString(
         PublishChannel channel,
         uint256 tokenId,
@@ -244,14 +312,7 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
         string calldata value
     ) external;
 
-    // publish a uint256 from the collection
-    function publishCollectionInt(
-        PublishChannel channel,
-        string calldata topic,
-        uint256 value
-    ) external;
-
-    // publish a uint256 from a specific token
+    // Publish a uint256 from a specific token. Only callable by token engine
     function publishTokenInt(
         PublishChannel channel,
         uint256 tokenId,
@@ -269,18 +330,18 @@ interface IShellFramework is IERC165, IERC2981, IOwnable {
         view
         returns (string memory);
 
+    // Read a uint256 from collection storage
+    function readCollectionInt(StorageLocation location, string calldata key)
+        external
+        view
+        returns (uint256);
+
     // Read a string from token storage
     function readTokenString(
         StorageLocation location,
         uint256 tokenId,
         string calldata key
     ) external view returns (string memory);
-
-    // Read a uint256 from collection storage
-    function readCollectionInt(StorageLocation location, string calldata key)
-        external
-        view
-        returns (uint256);
 
     // Read a uint256 from token storage
     function readTokenInt(
