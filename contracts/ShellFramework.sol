@@ -114,9 +114,15 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     // token owner
     function forkToken(uint256 tokenId, uint256 forkId) public virtual;
 
+    // should be implemented in the token models, should assert msg.sender is
+    // token owner
+    function forkTokens(uint256[] calldata tokenIds, uint256 forkId)
+        external
+        virtual;
+
     function _forkToken(uint256 tokenId, uint256 forkId) internal {
         _tokenForks[tokenId] = forkId;
-        emit TokenForked(tokenId, forkId);
+        emit ForkJoined(tokenId, forkId);
     }
 
     // ---
@@ -291,7 +297,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     ) private {
         bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
         _stringStorage[storageKey] = value;
-        emit CollectionStringUpdated(location, key, value);
+        emit ForkStringUpdated(location, forkId, key, value);
     }
 
     function _writeForkInt(
@@ -302,7 +308,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     ) private {
         bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
         _intStorage[storageKey] = value;
-        emit CollectionIntUpdated(location, key, value);
+        emit ForkIntUpdated(location, forkId, key, value);
     }
 
     function _writeTokenString(

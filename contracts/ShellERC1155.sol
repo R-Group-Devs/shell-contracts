@@ -31,8 +31,11 @@ contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
     // Framework functionality
     // ---
 
-    // Set the fork of a specific token. Must be token owner
     function forkToken(uint256, uint256) public pure override {
+        revert ForkingNotAllowed();
+    }
+
+    function forkTokens(uint256[] calldata, uint256) external pure override {
         revert ForkingNotAllowed();
     }
 

@@ -15,8 +15,7 @@ enum StorageLocation {
     MINT_DATA,
     // set by the framework during minting or collection creation, immutable
     FRAMEWORK,
-    // set by the engine at any time, not associated with a particular token,
-    // siloed to a specific fork
+    // set by the engine at any time, siloed to a specific fork
     FORK
 }
 
@@ -93,20 +92,29 @@ interface IShellFramework is IERC165, IERC2981 {
     event ForkOwnerUpdated(uint256 forkId, address owner);
 
     // a token has been set to a new fork
-    event TokenForked(uint256 tokenId, uint256 forkId);
+    event ForkJoined(uint256 tokenId, uint256 forkId);
 
     // ---
     // Storage events
     // ---
 
-    // A string was stored in the collection
-    event CollectionStringUpdated(
+    // A fork string was stored
+    event ForkStringUpdated(
         StorageLocation location,
+        uint256 forkId,
         string key,
         string value
     );
 
-    // A string was stored in a token
+    // A fork int was stored
+    event ForkIntUpdated(
+        StorageLocation location,
+        uint256 forkId,
+        string key,
+        uint256 value
+    );
+
+    // A token string was stored
     event TokenStringUpdated(
         StorageLocation location,
         uint256 tokenId,
@@ -114,14 +122,7 @@ interface IShellFramework is IERC165, IERC2981 {
         string value
     );
 
-    // A uint256 was stored in the collection
-    event CollectionIntUpdated(
-        StorageLocation location,
-        string key,
-        uint256 value
-    );
-
-    // A uint256 was stored in a token
+    // A token int was stored
     event TokenIntUpdated(
         StorageLocation location,
         uint256 tokenId,
@@ -180,6 +181,9 @@ interface IShellFramework is IERC165, IERC2981 {
 
     // Set the fork of a specific token. Must be token owner
     function forkToken(uint256 tokenId, uint256 forkId) external;
+
+    // Set the fork for several tokens. Must own all tokens
+    function forkTokens(uint256[] memory tokenIds, uint256 forkId) external;
 
     // ---
     // Fork views

@@ -69,6 +69,19 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
         _forkToken(tokenId, forkId);
     }
 
+    function forkTokens(uint256[] memory tokenIds, uint256 forkId)
+        external
+        override
+    {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (msg.sender != ownerOf(tokenIds[i])) {
+                revert SenderNotTokenOwner();
+            }
+
+            _forkToken(tokenIds[i], forkId);
+        }
+    }
+
     // ---
     // Engine functionality
     // ---
