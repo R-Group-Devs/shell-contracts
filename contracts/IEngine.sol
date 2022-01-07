@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "./IShellFramework.sol";
 
 // Required interface for framework engines
@@ -26,11 +26,8 @@ interface IEngine is IERC165 {
     // Called by the framework during a transfer, including mints (from=0) and
     // burns (to=0). Cannot break transfer even in the case of reverting, as the
     // collection will wrap the downstream call in a try/catch
-    //
-    // The engine MUST assert msg.sender == collection address!!
-    //
+    // collection = msg.sender
     function beforeTokenTransfer(
-        IShellFramework collection,
         address operator,
         address from,
         address to,
@@ -42,8 +39,6 @@ interface IEngine is IERC165 {
     // the collection (fork id = 0). Can be used by engine developers to prevent
     // an engine from being installed in a collection or non-canonical fork if
     // desired
-    //
-    // The engine MUST assert msg.sender == collection address!!
-    //
-    function afterEngineSet(IShellFramework collection, uint256 forkId) external;
+    // collection = msg.sender
+    function afterEngineSet(uint256 forkId) external;
 }
