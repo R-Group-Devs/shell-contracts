@@ -1,18 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../IEngine.sol";
-import "../IShellERC721.sol";
-import "../IShellFramework.sol";
-import "../engines/BeforeTokenTransferNopEngine.sol";
-import "../engines/NoRoyaltiesEngine.sol";
+import "../engines/ShellBaseEngine.sol";
 
 // Simple engine with a few conventions:
-contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
-    string public baseUri;
-
-    function getEngineName() external pure returns (string memory) {
-        return "MockEngine";
+contract MockEngine is ShellBaseEngine {
+    function name() external pure override returns (string memory) {
+        return "mock-engine";
     }
 
     function getTokenURI(IShellFramework collection, uint256 tokenId)
@@ -34,13 +28,14 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         IShellFramework collection,
         uint256,
         uint256 salePrice
-    ) external view returns (address receiver, uint256 royaltyAmount) {
+    ) external view override returns (address receiver, uint256 royaltyAmount) {
         receiver = collection.owner();
         royaltyAmount = (salePrice * 1000) / 10000;
     }
 
+    // pass thru write
     function writeIntToToken(
-        IShellERC721 collection,
+        IShellFramework collection,
         uint256 tokenId,
         string calldata key,
         uint256 value
@@ -48,22 +43,26 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         collection.writeTokenInt(StorageLocation.ENGINE, tokenId, key, value);
     }
 
+    // pass thru write
     function writeIntToCollection(
-        IShellERC721 collection,
+        IShellFramework collection,
+        uint256 forkId,
         string calldata key,
         uint256 value
     ) external {
-        collection.writeCollectionInt(StorageLocation.ENGINE, key, value);
+        collection.writeForkInt(StorageLocation.FORK, forkId, key, value);
     }
 
-    function mintPassthrough(IShellERC721 collection, MintEntry calldata entry)
-        external
-        returns (uint256)
-    {
+    // mint pass thru
+    function mintPassthrough(
+        IShellFramework collection,
+        MintEntry calldata entry
+    ) external returns (uint256) {
         return collection.mint(entry);
     }
 
-    function mint(IShellERC721 collection, string calldata ipfsHash)
+    // store ipfs in mint data
+    function mint(IShellFramework collection, string calldata ipfsHash)
         external
         returns (uint256)
     {
@@ -88,37 +87,5 @@ contract MockEngine is IEngine, BeforeTokenTransferNopEngine {
         );
 
         return tokenId;
-    }
-
-    function afterInstallEngine(IShellFramework collection)
-        external
-        view
-        override(IEngine)
-    {
-        require(
-            collection.supportsInterface(type(IShellERC721).interfaceId),
-            "must implement IShellERC721"
-        );
-    }
-
-    function afterInstallEngine(IShellFramework collection, uint256)
-        external
-        view
-        override(IEngine)
-    {
-        require(
-            collection.supportsInterface(type(IShellERC721).interfaceId),
-            "must implement IShellERC721"
-        );
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return interfaceId == type(IEngine).interfaceId;
     }
 }
