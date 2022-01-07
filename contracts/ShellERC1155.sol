@@ -49,7 +49,7 @@ contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
     // ---
 
     function mint(MintEntry calldata entry) external returns (uint256) {
-        if (msg.sender != address(getCollectionEngine())) {
+        if (msg.sender != address(getForkEngine(0))) {
             revert SenderNotEngine();
         }
 
@@ -60,7 +60,7 @@ contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
         external
         returns (uint256[] memory)
     {
-        if (msg.sender != address(getCollectionEngine())) {
+        if (msg.sender != address(getForkEngine(0))) {
             revert SenderNotEngine();
         }
 
@@ -110,14 +110,7 @@ contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
         for (uint256 i = 0; i < ids.length; i++) {
             uint256 tokenId = ids[i];
             IEngine engine = getTokenEngine(tokenId);
-            engine.beforeTokenTransfer(
-                this,
-                operator,
-                from,
-                to,
-                tokenId,
-                amounts[i]
-            );
+            engine.beforeTokenTransfer(operator, from, to, tokenId, amounts[i]);
         }
     }
 }

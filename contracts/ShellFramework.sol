@@ -44,7 +44,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         // not using createFork for initial fork
         _forks[0].engine = engine;
         _forks[0].owner = owner_;
-        engine.afterEngineSet(this, 0);
+        engine.afterEngineSet(0);
         emit ForkCreated(0, engine, owner_);
     }
 
@@ -77,7 +77,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
             forkToken(tokenIds[i], forkId);
         }
 
-        engine.afterEngineSet(this, forkId);
+        engine.afterEngineSet(forkId);
 
         return forkId;
     }
@@ -98,7 +98,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
 
         _forks[forkId].engine = engine;
         emit ForkEngineUpdated(forkId, engine);
-        engine.afterEngineSet(this, forkId);
+        engine.afterEngineSet(forkId);
     }
 
     function setForkOwner(uint256 forkId, address owner_) external {
@@ -131,16 +131,16 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         return _forks[forkId];
     }
 
+    function getForkEngine(uint256 forkId) public view returns (IEngine) {
+        return _forks[forkId].engine;
+    }
+
     function getTokenForkId(uint256 tokenId) public view returns (uint256) {
         return _tokenForks[tokenId];
     }
 
     function getTokenEngine(uint256 tokenId) public view returns (IEngine) {
         return _forks[_tokenForks[tokenId]].engine;
-    }
-
-    function getCollectionEngine() public view returns (IEngine) {
-        return _forks[0].engine;
     }
 
     // ---
@@ -177,7 +177,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
                 StorageLocation.FRAMEWORK,
                 tokenId,
                 "engine",
-                uint256(uint160(address(getCollectionEngine())))
+                uint256(uint160(address(getForkEngine(0))))
             );
         }
         if (entry.options.storeMintedTo) {
@@ -211,13 +211,24 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     // Storage write controller (for engine)
     // ---
 
-    function writeCollectionString(
+    function writeForkString(
         StorageLocation location,
+        uint256 forkId,
         string calldata key,
         string calldata value
     ) external {
-        _validateCollectionWrite(location);
-        _writeCollectionString(location, key, value);
+        _validateForkWrite(location, forkId);
+        _writeForkString(location, forkId, key, value);
+    }
+
+    function writeForkInt(
+        StorageLocation location,
+        uint256 forkId,
+        string calldata key,
+        uint256 value
+    ) external {
+        _validateForkWrite(location, forkId);
+        _writeForkInt(location, forkId, key, value);
     }
 
     function writeTokenString(
@@ -230,15 +241,6 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         _writeTokenString(location, tokenId, key, value);
     }
 
-    function writeCollectionInt(
-        StorageLocation location,
-        string calldata key,
-        uint256 value
-    ) external {
-        _validateCollectionWrite(location);
-        _writeCollectionInt(location, key, value);
-    }
-
     function writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
@@ -249,9 +251,12 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         _writeTokenInt(location, tokenId, key, value);
     }
 
-    function _validateCollectionWrite(StorageLocation location) private view {
-        if (location == StorageLocation.ENGINE) {
-            if (msg.sender != address(getCollectionEngine())) {
+    function _validateForkWrite(StorageLocation location, uint256 forkId)
+        private
+        view
+    {
+        if (location == StorageLocation.FORK) {
+            if (msg.sender != address(getForkEngine(forkId))) {
                 revert SenderNotEngine();
             }
             return; // made it
@@ -269,11 +274,6 @@ abstract contract ShellFramework is IShellFramework, Initializable {
                 revert SenderNotEngine();
             }
             return; // made it
-        } else if (location == StorageLocation.CANONICAL) {
-            if (msg.sender != address(getCollectionEngine())) {
-                revert SenderNotEngine();
-            }
-            return; // made it
         }
 
         revert WriteNotAllowed();
@@ -283,14 +283,26 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     // Storage write implementation
     // ---
 
-    function _writeCollectionString(
+    function _writeForkString(
         StorageLocation location,
+        uint256 forkId,
         string memory key,
         string memory value
-    ) internal {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
+    ) private {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
         _stringStorage[storageKey] = value;
         emit CollectionStringUpdated(location, key, value);
+    }
+
+    function _writeForkInt(
+        StorageLocation location,
+        uint256 forkId,
+        string memory key,
+        uint256 value
+    ) private {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
+        _intStorage[storageKey] = value;
+        emit CollectionIntUpdated(location, key, value);
     }
 
     function _writeTokenString(
@@ -298,7 +310,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         uint256 tokenId,
         string memory key,
         string memory value
-    ) internal {
+    ) private {
         bytes32 storageKey = keccak256(
             abi.encodePacked(location, tokenId, key)
         );
@@ -306,22 +318,12 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         emit TokenStringUpdated(location, tokenId, key, value);
     }
 
-    function _writeCollectionInt(
-        StorageLocation location,
-        string memory key,
-        uint256 value
-    ) internal {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
-        _intStorage[storageKey] = value;
-        emit CollectionIntUpdated(location, key, value);
-    }
-
     function _writeTokenInt(
         StorageLocation location,
         uint256 tokenId,
         string memory key,
         uint256 value
-    ) internal {
+    ) private {
         bytes32 storageKey = keccak256(
             abi.encodePacked(location, tokenId, key)
         );
@@ -330,89 +332,25 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     }
 
     // ---
-    // Event publishing
-    // ---
-
-    function publishCollectionString(
-        PublishChannel channel,
-        string calldata topic,
-        string calldata value
-    ) external {
-        _validateCollectionPublish(channel);
-        emit CollectionStringPublished(channel, topic, value);
-    }
-
-    function publishTokenString(
-        PublishChannel channel,
-        uint256 tokenId,
-        string calldata topic,
-        string calldata value
-    ) external {
-        _validateTokenPublish(channel, tokenId);
-        emit TokenStringPublished(channel, tokenId, topic, value);
-    }
-
-    function publishCollectionInt(
-        PublishChannel channel,
-        string calldata topic,
-        uint256 value
-    ) external {
-        _validateCollectionPublish(channel);
-        emit CollectionIntPublished(channel, topic, value);
-    }
-
-    function publishTokenInt(
-        PublishChannel channel,
-        uint256 tokenId,
-        string calldata topic,
-        uint256 value
-    ) external {
-        _validateTokenPublish(channel, tokenId);
-        emit TokenIntPublished(channel, tokenId, topic, value);
-    }
-
-    function _validateCollectionPublish(PublishChannel channel) private view {
-        if (channel == PublishChannel.PUBLIC) {
-            return;
-        }
-
-        if (channel != PublishChannel.ENGINE) {
-            revert PublishNotAllowed();
-        }
-
-        if (msg.sender != address(getCollectionEngine())) {
-            revert SenderNotEngine();
-        }
-    }
-
-    function _validateTokenPublish(PublishChannel channel, uint256 tokenId)
-        private
-        view
-    {
-        if (channel == PublishChannel.PUBLIC) {
-            return;
-        }
-
-        if (channel != PublishChannel.ENGINE) {
-            revert PublishNotAllowed();
-        }
-
-        if (msg.sender != address(getTokenEngine(tokenId))) {
-            revert SenderNotEngine();
-        }
-    }
-
-    // ---
     // Storage views
     // ---
 
-    function readCollectionString(StorageLocation location, string calldata key)
-        external
-        view
-        returns (string memory)
-    {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
+    function readForkString(
+        StorageLocation location,
+        uint256 forkId,
+        string calldata key
+    ) external view returns (string memory) {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
         return _stringStorage[storageKey];
+    }
+
+    function readForkInt(
+        StorageLocation location,
+        uint256 forkId,
+        string calldata key
+    ) external view returns (uint256) {
+        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
+        return _intStorage[storageKey];
     }
 
     function readTokenString(
@@ -424,15 +362,6 @@ abstract contract ShellFramework is IShellFramework, Initializable {
             abi.encodePacked(location, tokenId, key)
         );
         return _stringStorage[storageKey];
-    }
-
-    function readCollectionInt(StorageLocation location, string calldata key)
-        external
-        view
-        returns (uint256)
-    {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, key));
-        return _intStorage[storageKey];
     }
 
     function readTokenInt(

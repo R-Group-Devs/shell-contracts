@@ -74,7 +74,7 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
     // ---
 
     function mint(MintEntry calldata entry) external returns (uint256) {
-        if (msg.sender != address(getCollectionEngine())) {
+        if (msg.sender != address(getForkEngine(0))) {
             revert SenderNotEngine();
         }
 
@@ -85,7 +85,7 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
         external
         returns (uint256[] memory)
     {
-        if (msg.sender != address(getCollectionEngine())) {
+        if (msg.sender != address(getForkEngine(0))) {
             revert SenderNotEngine();
         }
 
@@ -131,7 +131,6 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
         uint256 tokenId
     ) internal override {
         getTokenEngine(tokenId).beforeTokenTransfer(
-            this,
             msg.sender,
             from,
             to,

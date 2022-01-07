@@ -15,17 +15,9 @@ enum StorageLocation {
     MINT_DATA,
     // set by the framework during minting or collection creation, immutable
     FRAMEWORK,
-    // set by the engine for fork 0 at any time, mutable
-    CANONICAL
-}
-
-// publish flag
-enum PublishChannel {
-    INVALID,
-    // events created by anybody
-    PUBLIC,
-    // events created by engine
-    ENGINE
+    // set by the engine at any time, not associated with a particular token,
+    // siloed to a specific fork
+    FORK
 }
 
 // string key / value
@@ -77,9 +69,6 @@ interface IShellFramework is IERC165, IERC2981 {
 
     // a write was attempted that is not allowed
     error WriteNotAllowed();
-
-    // a publish was attempted that is not allowed
-    error PublishNotAllowed();
 
     // an operation was attempted but msg.sender was not the expected engine
     error SenderNotEngine();
@@ -135,40 +124,6 @@ interface IShellFramework is IERC165, IERC2981 {
     // A uint256 was stored in a token
     event TokenIntUpdated(
         StorageLocation location,
-        uint256 tokenId,
-        string key,
-        uint256 value
-    );
-
-    // ---
-    // Published events
-    // ---
-
-    // A string was published from the collection
-    event CollectionStringPublished(
-        PublishChannel location,
-        string key,
-        string value
-    );
-
-    // A uint256 was published from the collection
-    event CollectionIntPublished(
-        PublishChannel location,
-        string key,
-        uint256 value
-    );
-
-    // A string was published from a token
-    event TokenStringPublished(
-        PublishChannel location,
-        uint256 tokenId,
-        string key,
-        string value
-    );
-
-    // A uint256 was published from a token
-    event TokenIntPublished(
-        PublishChannel location,
         uint256 tokenId,
         string key,
         uint256 value
@@ -233,14 +188,14 @@ interface IShellFramework is IERC165, IERC2981 {
     // Get information about a fork
     function getFork(uint256 forkId) external view returns (Fork memory);
 
+    // Get the collection / canonical engine. getFork(0).engine
+    function getForkEngine(uint256 forkId) external view returns (IEngine);
+
     // Get a token's fork ID
     function getTokenForkId(uint256 tokenId) external view returns (uint256);
 
-    // Get a token's engine
+    // Get a token's engine. getFork(getTokenForkId(tokenId)).engine
     function getTokenEngine(uint256 tokenId) external view returns (IEngine);
-
-    // Get the collection / canonical engine
-    function getCollectionEngine() external view returns (IEngine);
 
     // ---
     // Engine functionality
@@ -259,15 +214,17 @@ interface IShellFramework is IERC165, IERC2981 {
     // ---
 
     // Write a string to collection storage. Only callable by collection engine
-    function writeCollectionString(
+    function writeForkString(
         StorageLocation location,
+        uint256 forkId,
         string calldata key,
         string calldata value
     ) external;
 
     // Write a string to collection storage. Only callable by collection engine
-    function writeCollectionInt(
+    function writeForkInt(
         StorageLocation location,
+        uint256 forkId,
         string calldata key,
         uint256 value
     ) external;
@@ -289,54 +246,22 @@ interface IShellFramework is IERC165, IERC2981 {
     ) external;
 
     // ---
-    // Event publishing
-    // ---
-
-    // publish a string from the collection. Only callable by collection engine
-    function publishCollectionString(
-        PublishChannel channel,
-        string calldata topic,
-        string calldata value
-    ) external;
-
-    // Publish a uint256 from the collection. Only callable by collection engine
-    function publishCollectionInt(
-        PublishChannel channel,
-        string calldata topic,
-        uint256 value
-    ) external;
-
-    // Publish a string from a specific token. Only callable by token engine
-    function publishTokenString(
-        PublishChannel channel,
-        uint256 tokenId,
-        string calldata topic,
-        string calldata value
-    ) external;
-
-    // Publish a uint256 from a specific token. Only callable by token engine
-    function publishTokenInt(
-        PublishChannel channel,
-        uint256 tokenId,
-        string calldata topic,
-        uint256 value
-    ) external;
-
-    // ---
     // Storage reads
     // ---
 
     // Read a string from collection storage
-    function readCollectionString(StorageLocation location, string calldata key)
-        external
-        view
-        returns (string memory);
+    function readForkString(
+        StorageLocation location,
+        uint256 forkId,
+        string calldata key
+    ) external view returns (string memory);
 
     // Read a uint256 from collection storage
-    function readCollectionInt(StorageLocation location, string calldata key)
-        external
-        view
-        returns (uint256);
+    function readForkInt(
+        StorageLocation location,
+        uint256 forkId,
+        string calldata key
+    ) external view returns (uint256);
 
     // Read a string from token storage
     function readTokenString(
