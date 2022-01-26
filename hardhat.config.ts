@@ -64,13 +64,17 @@ const config: HardhatUserConfig = {
       accounts,
     },
 
-    hardhat: {
-      // requires an archive node RPC connection (e.g. Alchemy)
-      forking: {
-        url: process.env.MAINNET_URL || "",
-        blockNumber: 13907512
-      }
-    }
+    //
+    // TODO: commenting this out for now as it slows down tests -- required for
+    // the ENS stuff tho! just want to selectively activate it
+    //
+    // hardhat: {
+    //   // requires an archive node RPC connection (e.g. Alchemy)
+    //   forking: {
+    //     url: process.env.MAINNET_URL || "",
+    //     blockNumber: 13907512
+    //   }
+    // }
   },
 
   gasReporter: {
