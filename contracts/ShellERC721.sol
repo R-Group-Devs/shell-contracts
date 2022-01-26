@@ -60,26 +60,15 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
     // Framework functionality
     // ---
 
-    // Set the fork of a specific token. Must be token owner
-    function forkToken(uint256 tokenId, uint256 forkId) public override {
-        if (msg.sender != ownerOf(tokenId)) {
-            revert SenderNotTokenOwner();
-        }
-
-        _forkToken(tokenId, forkId);
-    }
-
-    function forkTokens(uint256[] memory tokenIds, uint256 forkId)
-        external
+    function canSenderForkToken(address sender, uint256 tokenId)
+        public
+        view
+        virtual
         override
+        returns (bool)
     {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (msg.sender != ownerOf(tokenIds[i])) {
-                revert SenderNotTokenOwner();
-            }
-
-            _forkToken(tokenIds[i], forkId);
-        }
+        // owner of a token can always fork
+        return ownerOf(tokenId) == sender;
     }
 
     // ---

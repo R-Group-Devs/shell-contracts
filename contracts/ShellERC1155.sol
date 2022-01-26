@@ -5,9 +5,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "./ShellFramework.sol";
 
 contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
-    // cant fork 1155s
-    error ForkingNotAllowed();
-
     string public name;
 
     string public symbol;
@@ -25,18 +22,6 @@ contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
 
         name = name_;
         symbol = symbol_;
-    }
-
-    // ---
-    // Framework functionality
-    // ---
-
-    function forkToken(uint256, uint256) public pure override {
-        revert ForkingNotAllowed();
-    }
-
-    function forkTokens(uint256[] calldata, uint256) external pure override {
-        revert ForkingNotAllowed();
     }
 
     // ---

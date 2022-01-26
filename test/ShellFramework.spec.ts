@@ -79,7 +79,7 @@ describe("ShellFactory", function () {
     it("should revert if invalid engine", async () => {
       const collection = await createCollection();
       expect(collection.installEngine(erc721.address)).to.be.revertedWith(
-        "shell: invalid engine"
+        "InvalidEngine()"
       );
     });
     it("should emit an EngineInstalled event", async () => {

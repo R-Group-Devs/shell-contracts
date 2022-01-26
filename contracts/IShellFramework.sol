@@ -75,8 +75,8 @@ interface IShellFramework is IERC165, IERC2981 {
     // an operation was attempted but msg.sender was not the fork owner
     error SenderNotForkOwner();
 
-    // an operation was attempted but msg.sender was not the token owner
-    error SenderNotTokenOwner();
+    // a token fork was attempted by an invalid msg.sender
+    error SenderCannotFork();
 
     // ---
     // Framework events
@@ -200,6 +200,12 @@ interface IShellFramework is IERC165, IERC2981 {
 
     // Get a token's engine. getFork(getTokenForkId(tokenId)).engine
     function getTokenEngine(uint256 tokenId) external view returns (IEngine);
+
+    // Determine if a given msg.sender can fork a token
+    function canSenderForkToken(address sender, uint256 tokenId)
+        external
+        view
+        returns (bool);
 
     // ---
     // Engine functionality

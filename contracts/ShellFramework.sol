@@ -82,6 +82,43 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         return forkId;
     }
 
+    // Set the fork of a specific token. Must be token owner
+    function forkToken(uint256 tokenId, uint256 forkId) public override {
+        if (!canSenderForkToken(msg.sender, tokenId)) {
+            revert SenderCannotFork();
+        }
+
+        _forkToken(tokenId, forkId);
+    }
+
+    function forkTokens(uint256[] memory tokenIds, uint256 forkId)
+        external
+        override
+    {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (!canSenderForkToken(msg.sender, tokenIds[i])) {
+                revert SenderCannotFork();
+            }
+
+            _forkToken(tokenIds[i], forkId);
+        }
+    }
+
+    function canSenderForkToken(address, uint256)
+        public
+        view
+        virtual
+        returns (bool)
+    {
+        // by default, do not allow forking
+        return false;
+    }
+
+    function _forkToken(uint256 tokenId, uint256 forkId) internal {
+        _tokenForks[tokenId] = forkId;
+        emit ForkJoined(tokenId, forkId);
+    }
+
     function setForkEngine(uint256 forkId, IEngine engine) external {
         if (msg.sender != _forks[forkId].owner) {
             revert SenderNotForkOwner();
@@ -108,21 +145,6 @@ abstract contract ShellFramework is IShellFramework, Initializable {
 
         _forks[forkId].owner = owner_;
         emit ForkOwnerUpdated(forkId, owner_);
-    }
-
-    // should be implemented in the token models, should assert msg.sender is
-    // token owner
-    function forkToken(uint256 tokenId, uint256 forkId) public virtual;
-
-    // should be implemented in the token models, should assert msg.sender is
-    // token owner
-    function forkTokens(uint256[] calldata tokenIds, uint256 forkId)
-        external
-        virtual;
-
-    function _forkToken(uint256 tokenId, uint256 forkId) internal {
-        _tokenForks[tokenId] = forkId;
-        emit ForkJoined(tokenId, forkId);
     }
 
     // ---
