@@ -48,7 +48,7 @@ describe("ShellFactory", function () {
       owner
     );
     const mined = await trx.wait();
-    const address = mined.events?.[2].args?.collection;
+    const address = mined.events?.[1].args?.collection;
     const collection = ShellERC721.attach(address);
     return collection;
   };
@@ -58,12 +58,12 @@ describe("ShellFactory", function () {
       await factory.registerImplementation("foo", erc721.address);
       expect(
         factory.registerImplementation("foo", erc721.address)
-      ).to.be.revertedWith("shell: implementation exists");
+      ).to.be.revertedWith("ImplementationExists()");
     });
     it("should revert if implementation does not implement IShellFramework", async () => {
       expect(
         factory.registerImplementation("foo", mockEngine.address)
-      ).to.be.revertedWith("shell: invalid implementation");
+      ).to.be.revertedWith("InvalidImplementation()");
     });
     it("should not allow non-owner to register implementation", async () => {
       const factory1 = factory.connect(accounts[1]);
@@ -88,7 +88,7 @@ describe("ShellFactory", function () {
           mockEngine.address,
           a0
         )
-      ).to.be.revertedWith("shell: implementation not found");
+      ).to.be.revertedWith("ImplementationNotFound()");
     });
     it("should emit CollectionCreated when launching a collection", async () => {
       const trx = await factory.createCollection(
@@ -99,8 +99,8 @@ describe("ShellFactory", function () {
         a0
       );
       const mined = await trx.wait();
-      const address = mined.events?.[2].args?.collection;
-      const implementation = mined.events?.[2].args?.implementation;
+      const address = mined.events?.[1].args?.collection;
+      const implementation = mined.events?.[1].args?.implementation;
       expect(address).to.match(/^0x/); //
       expect(implementation).to.equal(erc721.address);
     });

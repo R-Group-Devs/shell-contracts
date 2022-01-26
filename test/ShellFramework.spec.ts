@@ -13,6 +13,7 @@ import {
   mintOptions,
   MINT_DATA_STORAGE,
   FRAMEWORK_STORAGE,
+  FORK_STORAGE,
   ENGINE_STORAGE,
 } from "./fixtures";
 
@@ -56,7 +57,7 @@ describe("ShellFactory", function () {
       owner
     );
     const mined = await trx.wait();
-    const address = mined.events?.[2].args?.collection;
+    const address = mined.events?.[1].args?.collection;
     const collection = ShellERC721.attach(address);
     return collection;
   };
@@ -73,27 +74,6 @@ describe("ShellFactory", function () {
       const resp = await collection.royaltyInfo("1", parseUnits("1000"));
       expect(resp.receiver).to.equal(a0);
       expect(resp.royaltyAmount).to.equal(parseUnits("100"));
-    });
-  });
-  describe("engine installs", async () => {
-    it("should revert if invalid engine", async () => {
-      const collection = await createCollection();
-      expect(collection.installEngine(erc721.address)).to.be.revertedWith(
-        "InvalidEngine()"
-      );
-    });
-    it("should emit an EngineInstalled event", async () => {
-      const collection = await createCollection();
-      expect(collection.installEngine(mockEngine.address))
-        .to.emit(collection, "EngineInstalled")
-        .withArgs(mockEngine.address);
-    });
-    it("should revert if non-owner attempts engine install", async () => {
-      const collection = await createCollection();
-      const c1 = collection.connect(accounts[1]);
-      expect(c1.installEngine(mockEngine.address)).to.be.revertedWith(
-        "Ownable: caller is not owner"
-      );
     });
   });
   describe("engine provided mint data", () => {
@@ -175,11 +155,11 @@ describe("ShellFactory", function () {
       ).to.equal(await ethers.provider.getBlockNumber());
     });
   });
-  describe("engine storage", () => {
-    it("should allow writing ints to collection from engine", async () => {
+  describe("fork storage", () => {
+    it("should allow writing ints to fork storage from engine", async () => {
       const collection = await createCollection();
-      await mockEngine.writeIntToCollection(collection.address, "foo", 123);
-      const value = await collection.readCollectionInt(ENGINE_STORAGE, "foo");
+      await mockEngine.writeIntToFork(collection.address, 0, "foo", 123);
+      const value = await collection.readForkInt(FORK_STORAGE, 0, "foo");
       expect(value).to.equal(123);
     });
     it("should allow writing ints to token from engine", async () => {
@@ -188,10 +168,6 @@ describe("ShellFactory", function () {
       await mockEngine.writeIntToToken(collection.address, "1", "foo", 123);
       const value = await collection.readTokenInt(ENGINE_STORAGE, "1", "foo");
       expect(value).to.equal(123);
-    });
-    it("should revert if non-engine attempts to write to collection", async () => {
-      const collection = await createCollection();
-      await mockEngine.mint(collection.address, "Qhash");
     });
   });
   describe("implementations", () => {
@@ -207,7 +183,7 @@ describe("ShellFactory", function () {
         a0
       );
       const mined = await trx.wait();
-      const address = mined.events?.[2].args?.collection;
+      const address = mined.events?.[1].args?.collection;
       const collection = ShellERC1155.attach(address);
       expect(await collection.supportsInterface("0xd9b67a26")).to.equal(true);
       await mockEngine.mint(collection.address, "hash");

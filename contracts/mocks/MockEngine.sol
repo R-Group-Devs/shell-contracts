@@ -44,7 +44,7 @@ contract MockEngine is ShellBaseEngine {
     }
 
     // pass thru write
-    function writeIntToCollection(
+    function writeIntToFork(
         IShellFramework collection,
         uint256 forkId,
         string calldata key,
