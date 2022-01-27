@@ -4,27 +4,18 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../libraries/Base64.sol";
-import "../IEngine.sol";
-import "../IShellFramework.sol";
-import "../IShellERC721.sol";
-import "../engines/BeforeTokenTransferNopEngine.sol";
-import "../engines/NoRoyaltiesEngine.sol";
+import "../engines/ShellBaseEngine.sol";
 import "../engines/OnChainMetadataEngine.sol";
 
-contract RGroupPlaceholder is
-    IEngine,
-    BeforeTokenTransferNopEngine,
-    NoRoyaltiesEngine,
-    OnChainMetadataEngine
-{
+contract RGroupTest is ShellBaseEngine, OnChainMetadataEngine {
     using Strings for uint256;
 
     function getEngineName() external pure returns (string memory) {
-        return "r-group-placeholder";
+        return "r-group-test";
     }
 
     function mint(
-        IShellERC721 collection,
+        IShellFramework collection,
         string calldata name_,
         string calldata bio
     ) external returns (uint256) {
@@ -147,32 +138,5 @@ contract RGroupPlaceholder is
         returns (string memory)
     {
         return "https://twitter.com/raribledao";
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return interfaceId == type(IEngine).interfaceId;
-    }
-
-    function afterInstallEngine(IShellFramework collection) external view {
-        require(
-            collection.supportsInterface(type(IShellERC721).interfaceId),
-            "must implement IShellERC721"
-        );
-    }
-
-    function afterInstallEngine(IShellFramework collection, uint256)
-        external
-        view
-    {
-        require(
-            collection.supportsInterface(type(IShellERC721).interfaceId),
-            "must implement IShellERC721"
-        );
     }
 }
