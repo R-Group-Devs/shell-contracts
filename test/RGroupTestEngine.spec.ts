@@ -7,7 +7,7 @@ import {
   ShellERC721,
   MockEngine,
   ShellERC721__factory,
-  RGroupTest,
+  RGroupTestEngine,
 } from "../typechain";
 import {
   mintEntry,
@@ -28,7 +28,7 @@ describe("ShellFactory", function () {
   let erc721: ShellERC721;
   let factory: ShellFactory;
   let accounts: SignerWithAddress[];
-  let testEngine: RGroupTest;
+  let testEngine: RGroupTestEngine;
   let a0: string, a1: string, a2: string, a3: string;
 
   beforeEach(async () => {
