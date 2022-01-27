@@ -7,7 +7,7 @@ import "../libraries/Base64.sol";
 import "../engines/ShellBaseEngine.sol";
 import "../engines/OnChainMetadataEngine.sol";
 
-contract RGroupTest is ShellBaseEngine, OnChainMetadataEngine {
+contract RGroupTestEngine is ShellBaseEngine, OnChainMetadataEngine {
     using Strings for uint256;
 
     function getEngineName() external pure returns (string memory) {

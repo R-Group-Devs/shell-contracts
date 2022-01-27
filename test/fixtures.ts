@@ -38,3 +38,20 @@ export const ENGINE_STORAGE = 1;
 export const MINT_DATA_STORAGE = 2;
 export const FRAMEWORK_STORAGE = 3;
 export const FORK_STORAGE = 4;
+
+interface MaybeMetadata {
+  name?: string;
+  description?: string;
+  image?: string;
+  external_url?: string;
+}
+
+export const metadataFromTokenURI = (tokenUri: string): MaybeMetadata => {
+  const [prefix, encoded] = tokenUri.split(",");
+  if (prefix !== "data:application/json;base64") {
+    throw new Error("invalid token uri");
+  }
+  const json = Buffer.from(encoded, "base64").toString();
+  const parsed = JSON.parse(json);
+  return parsed;
+};
