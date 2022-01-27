@@ -11,8 +11,6 @@ yarn build \
   && cp \
     $BASE/IEngine.sol/IEngine.json \
     $BASE/IShellFramework.sol/IShellFramework.json \
-    $BASE/IShellERC721.sol/IShellERC721.json \
-    $BASE/IShellERC1155.sol/IShellERC1155.json \
     $BASE/IShellFactory.sol/IShellFactory.json \
     $OZ_BASE/token/ERC721/IERC721Upgradeable.sol/IERC721Upgradeable.json \
     $OZ_BASE/token/ERC1155/IERC1155Upgradeable.sol/IERC1155Upgradeable.json \

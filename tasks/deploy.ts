@@ -1,27 +1,5 @@
-import { task, types } from "hardhat/config";
-import { promises } from "fs";
-import { join } from "path";
-
-const { readFile, writeFile } = promises;
-const filepath = join(__dirname, "./deployments.json");
-
-interface DeploymentsFile {
-  [network: string]:
-    | undefined
-    | {
-        address: string;
-      };
-}
-
-const writeDeploymentsFile = async (contents: unknown) => {
-  await writeFile(filepath, JSON.stringify(contents, null, 2));
-};
-
-const readDeploymentsFile = async (): Promise<DeploymentsFile> => {
-  const file = await readFile(filepath);
-  const entries = JSON.parse(file.toString());
-  return entries;
-};
+import { task } from "hardhat/config";
+import { readDeploymentsFile, writeDeploymentsFile } from "./deployments";
 
 task("deploy", "Deploy a contract")
   .addParam<string>("contract", "Contract to deploy")
@@ -40,14 +18,14 @@ task("deploy", "Deploy a contract")
     console.log(`🐚 ${contract}: ${address}`);
     console.log("---\n\n");
 
-    if (contract === "ShellFactory") {
-      console.log("updating factory-deployments.json ...");
-      const entries = await readDeploymentsFile();
-      entries[network.name] = { address };
-      await writeDeploymentsFile(entries);
-    }
-
     if (network.name !== "localhost" && network.name !== "hardhat") {
+      if (contract === "ShellFactory") {
+        console.log("updating factory-deployments.json ...");
+        const entries = await readDeploymentsFile();
+        entries[network.name] = { address };
+        await writeDeploymentsFile(entries);
+      }
+
       console.log("waiting 60 seconds before attempting to verify ...");
       await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
@@ -58,10 +36,10 @@ task("deploy", "Deploy a contract")
           constructorArguments: [],
         });
       } catch (err) {
-        console.warn('Verfication error:', err)
+        console.warn("Verfication error:", err);
       }
     }
-    
+
     return address;
   });
 
@@ -100,93 +78,93 @@ task(
     await run("register", { address, implementation });
   });
 
-task("deploy:squadz", "Deploy and register SQUADZ")
-  .addOptionalParam<boolean>("deployShellFactory", "Deploy new shell factory?", false, types.boolean)
-  .addOptionalParam<string>("reverseRecords", "Existing name system for personalized descriptor")
-  .setAction(async ({ deployShellFactory, reverseRecords }, { ethers, run, network }) => {
-    // Deploy or get shell factory
-    const entries = await readDeploymentsFile();
-    let shellFactory
-    const entry = entries[network.name]
-    const ShellFactory = await ethers.getContractFactory("ShellFactory");
-    const implementationName = "shell-erc721-v1";
-    if (entry !== undefined && deployShellFactory !== true) {
-      shellFactory = ShellFactory.attach(entry.address);
-    } else {
-      if (deployShellFactory !== true) {
-        throw new Error(`No shell factory found on ${network.name}. Run again with '--deploy-shell-factory true' to deploy a new one.`);
-      } else {
-        const shellFactoryAddr = await run("deploy", { contract: "ShellFactory" });
-        shellFactory = ShellFactory.attach(shellFactoryAddr)
-        await run("deploy:implementation", { contract: "ShellERC721", implementation: implementationName });
-      }
-    }
+// task("deploy:squadz", "Deploy and register SQUADZ")
+//   .addOptionalParam<boolean>("deployShellFactory", "Deploy new shell factory?", false, types.boolean)
+//   .addOptionalParam<string>("reverseRecords", "Existing name system for personalized descriptor")
+//   .setAction(async ({ deployShellFactory, reverseRecords }, { ethers, run, network }) => {
+//     // Deploy or get shell factory
+//     const entries = await readDeploymentsFile();
+//     let shellFactory
+//     const entry = entries[network.name]
+//     const ShellFactory = await ethers.getContractFactory("ShellFactory");
+//     const implementationName = "shell-erc721-v1";
+//     if (entry !== undefined && deployShellFactory !== true) {
+//       shellFactory = ShellFactory.attach(entry.address);
+//     } else {
+//       if (deployShellFactory !== true) {
+//         throw new Error(`No shell factory found on ${network.name}. Run again with '--deploy-shell-factory true' to deploy a new one.`);
+//       } else {
+//         const shellFactoryAddr = await run("deploy", { contract: "ShellFactory" });
+//         shellFactory = ShellFactory.attach(shellFactoryAddr)
+//         await run("deploy:implementation", { contract: "ShellERC721", implementation: implementationName });
+//       }
+//     }
 
-    const signers = await ethers.getSigners()
-    const owner = await signers[0].getAddress()
+//     const signers = await ethers.getSigners()
+//     const owner = await signers[0].getAddress()
 
-    const SNSEngine = await ethers.getContractFactory("SNSEngine");
-    let snsEngine
-    if (reverseRecords === undefined) {
-      // Deploy SNSEngine
-      const snsEngineAddr = await run("deploy", { contract: "SNSEngine" });
-      snsEngine = SNSEngine.attach(snsEngineAddr);
-      // Deploy new SNS using shell factory and SNSEngine or specify revese records address
-      const tx = await shellFactory.createCollection("Simple Name System", "SNS", implementationName, snsEngine.address, owner)
-      const rec = await tx.wait();
-      if (rec.events === undefined) throw new Error('No event logs');
-      const collectionAddr = rec.events[4].args?.collection;
-      reverseRecords = await snsEngine.getSNSAddr(collectionAddr);
-      try {
-        await run("verify:verify", {
-          address: reverseRecords,
-          constructorArguments: [snsEngine.address, collectionAddr],
-        });
-      } catch (err) {
-        console.warn('Verfication error:', err);
-      }
-    } else {
-      snsEngine = SNSEngine.attach(reverseRecords);
-    }
-    
-    // Deploy new Simple Descriptor pointing at reverse records address
-    const descriptorFact = await ethers.getContractFactory("SimpleDescriptor");
-    const descriptor = await descriptorFact.deploy(reverseRecords);
-    await descriptor.deployed();
+//     const SNSEngine = await ethers.getContractFactory("SNSEngine");
+//     let snsEngine
+//     if (reverseRecords === undefined) {
+//       // Deploy SNSEngine
+//       const snsEngineAddr = await run("deploy", { contract: "SNSEngine" });
+//       snsEngine = SNSEngine.attach(snsEngineAddr);
+//       // Deploy new SNS using shell factory and SNSEngine or specify revese records address
+//       const tx = await shellFactory.createCollection("Simple Name System", "SNS", implementationName, snsEngine.address, owner)
+//       const rec = await tx.wait();
+//       if (rec.events === undefined) throw new Error('No event logs');
+//       const collectionAddr = rec.events[4].args?.collection;
+//       reverseRecords = await snsEngine.getSNSAddr(collectionAddr);
+//       try {
+//         await run("verify:verify", {
+//           address: reverseRecords,
+//           constructorArguments: [snsEngine.address, collectionAddr],
+//         });
+//       } catch (err) {
+//         console.warn('Verfication error:', err);
+//       }
+//     } else {
+//       snsEngine = SNSEngine.attach(reverseRecords);
+//     }
 
-    console.log(`Simple Descriptor deployed to ${descriptor.address} on ${network.name}.`);
+//     // Deploy new Simple Descriptor pointing at reverse records address
+//     const descriptorFact = await ethers.getContractFactory("SimpleDescriptor");
+//     const descriptor = await descriptorFact.deploy(reverseRecords);
+//     await descriptor.deployed();
 
-    console.log("waiting 60 seconds before attempting to verify ...");
-    await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+//     console.log(`Simple Descriptor deployed to ${descriptor.address} on ${network.name}.`);
 
-    console.log("verifying...");
-    try {
-      await run("verify:verify", {
-        address: descriptor.address,
-        constructorArguments: [reverseRecords],
-      });
-    } catch (err) {
-      console.warn('Verfication error:', err);
-    }
+//     console.log("waiting 60 seconds before attempting to verify ...");
+//     await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
 
-    // Deploy new Squadz Engine with Simple Descriptor as default descriptor
-    const squadzFact = await ethers.getContractFactory("SquadzEngine");
-    const squadzEngine = await squadzFact.deploy(descriptor.address);
-    await squadzEngine.deployed();
-    
-    console.log(`SQUADZ engine deployed to ${squadzEngine.address} on ${network.name}.`);
-    console.log("waiting 60 seconds before attempting to verify ...");
-    await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+//     console.log("verifying...");
+//     try {
+//       await run("verify:verify", {
+//         address: descriptor.address,
+//         constructorArguments: [reverseRecords],
+//       });
+//     } catch (err) {
+//       console.warn('Verfication error:', err);
+//     }
 
-    console.log("verifying...");
-    try {
-      await run("verify:verify", {
-        address: squadzEngine.address,
-        constructorArguments: [descriptor.address],
-      });
-    } catch (err) {
-      console.warn('Verfication error:', err)
-    }
+//     // Deploy new Squadz Engine with Simple Descriptor as default descriptor
+//     const squadzFact = await ethers.getContractFactory("SquadzEngine");
+//     const squadzEngine = await squadzFact.deploy(descriptor.address);
+//     await squadzEngine.deployed();
 
-    return { snsEngine, squadzEngine }
-  });
+//     console.log(`SQUADZ engine deployed to ${squadzEngine.address} on ${network.name}.`);
+//     console.log("waiting 60 seconds before attempting to verify ...");
+//     await new Promise((resolve) => setTimeout(resolve, 60 * 1000));
+
+//     console.log("verifying...");
+//     try {
+//       await run("verify:verify", {
+//         address: squadzEngine.address,
+//         constructorArguments: [descriptor.address],
+//       });
+//     } catch (err) {
+//       console.warn('Verfication error:', err)
+//     }
+
+//     return { snsEngine, squadzEngine }
+//   });
