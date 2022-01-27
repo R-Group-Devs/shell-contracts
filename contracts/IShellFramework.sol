@@ -92,7 +92,7 @@ interface IShellFramework is IERC165, IERC2981 {
     event ForkOwnerUpdated(uint256 forkId, address owner);
 
     // a token has been set to a new fork
-    event ForkJoined(uint256 tokenId, uint256 forkId);
+    event TokenForkUpdated(uint256 tokenId, uint256 forkId);
 
     // ---
     // Storage events
@@ -180,10 +180,10 @@ interface IShellFramework is IERC165, IERC2981 {
     function setForkOwner(uint256 forkId, address owner) external;
 
     // Set the fork of a specific token. Must be token owner
-    function forkToken(uint256 tokenId, uint256 forkId) external;
+    function setTokenFork(uint256 tokenId, uint256 forkId) external;
 
     // Set the fork for several tokens. Must own all tokens
-    function forkTokens(uint256[] memory tokenIds, uint256 forkId) external;
+    function setTokenForks(uint256[] memory tokenIds, uint256 forkId) external;
 
     // ---
     // Fork views

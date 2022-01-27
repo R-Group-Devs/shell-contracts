@@ -72,9 +72,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         emit ForkCreated(forkId, engine, owner_);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            // calling virtual method to ensure ownership / implementation
-            // checks are handled in the token model contract
-            forkToken(tokenIds[i], forkId);
+            setTokenFork(tokenIds[i], forkId);
         }
 
         engine.afterEngineSet(forkId);
@@ -83,7 +81,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
     }
 
     // Set the fork of a specific token. Must be token owner
-    function forkToken(uint256 tokenId, uint256 forkId) public override {
+    function setTokenFork(uint256 tokenId, uint256 forkId) public override {
         if (!canSenderForkToken(msg.sender, tokenId)) {
             revert SenderCannotFork();
         }
@@ -91,7 +89,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         _forkToken(tokenId, forkId);
     }
 
-    function forkTokens(uint256[] memory tokenIds, uint256 forkId)
+    function setTokenForks(uint256[] memory tokenIds, uint256 forkId)
         external
         override
     {
@@ -116,7 +114,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
 
     function _forkToken(uint256 tokenId, uint256 forkId) internal {
         _tokenForks[tokenId] = forkId;
-        emit ForkJoined(tokenId, forkId);
+        emit TokenForkUpdated(tokenId, forkId);
     }
 
     function setForkEngine(uint256 forkId, IEngine engine) external {
