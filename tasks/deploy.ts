@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { readDeploymentsFile, writeDeploymentsFile } from "./deployments";
+import { readDeploymentsFile, writeDeploymentsFile } from "./file";
 
 task("deploy", "Deploy a contract")
   .addParam<string>("contract", "Contract to deploy")
