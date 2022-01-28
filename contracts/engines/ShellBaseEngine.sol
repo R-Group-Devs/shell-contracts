@@ -10,9 +10,6 @@ import "../IEngine.sol";
 // - no royalties
 // - nop on beforeTokenTransfer and afterEngineSet hooks
 abstract contract ShellBaseEngine is IEngine {
-    function name() external pure virtual override returns (string memory) {
-        return "shell-base-engine";
-    }
 
     // nop
     function beforeTokenTransfer(

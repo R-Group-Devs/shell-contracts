@@ -10,7 +10,7 @@ import "../engines/OnChainMetadataEngine.sol";
 contract RGroupTestEngine is ShellBaseEngine, OnChainMetadataEngine {
     using Strings for uint256;
 
-    function getEngineName() external pure returns (string memory) {
+    function name() external pure returns (string memory) {
         return "r-group-test";
     }
 
