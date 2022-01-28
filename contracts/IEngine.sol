@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "./IShellFramework.sol";
 
 // Required interface for framework engines
-// interfaceId = ??????
+// interfaceId = 0x0b1d171c
 interface IEngine is IERC165 {
     // Get the name for this engine
     function name() external pure returns (string memory);
