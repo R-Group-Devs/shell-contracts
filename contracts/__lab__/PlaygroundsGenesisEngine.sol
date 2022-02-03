@@ -32,13 +32,30 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         return tokenId;
     }
 
+    function getPalette(uint256 tokenId) public pure returns (string memory) {
+        uint256 index = uint256(keccak256(abi.encodePacked(tokenId))) % 6;
+        return string(abi.encodePacked("P00", Strings.toString(index + 1)));
+    }
+
+    function getVariation(uint256 tokenId) public pure returns (string memory) {
+        uint256 index = uint256(keccak256(abi.encodePacked(tokenId))) % 15;
+
+        if (index == 9) {
+            return "C010";
+        } else if (index > 9) {
+            return string(abi.encodePacked("R00", Strings.toString(index - 9)));
+        } else {
+            return string(abi.encodePacked("C00", Strings.toString(index + 1)));
+        }
+    }
+
     function _computeName(IShellFramework, uint256 tokenId)
         internal
         pure
         override
         returns (string memory)
     {
-        return string(abi.encodePacked("Scroll #", Strings.toString(tokenId)));
+        return string(abi.encodePacked("Morph #", Strings.toString(tokenId)));
     }
 
     // compute the metadata description for a given token
@@ -48,7 +65,13 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
-        return string(abi.encodePacked("Scroll #", Strings.toString(tokenId)));
+        return
+            string(
+                abi.encodePacked(
+                    "A mysterious scroll... you feel it pulsating with cosmic energy. What secrets might it hold?",
+                    "\\n\\nhttps://playgrounds.wtf"
+                )
+            );
     }
 
     // compute the metadata image field for a given token
@@ -58,8 +81,22 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
+        string memory image = string(
+            abi.encodePacked(
+                "E001-",
+                getPalette(tokenId),
+                "-",
+                getVariation(tokenId),
+                ".png"
+            )
+        );
         return
-            "ipfs://ipfs/QmNr1uDyFvN3SBBw4NFBC9V7WZLrFzne2Q1xqnUbaS5WcJ/E001-P001-C001.png";
+            string(
+                abi.encodePacked(
+                    "ipfs://ipfs/QmNr1uDyFvN3SBBw4NFBC9V7WZLrFzne2Q1xqnUbaS5WcJ/",
+                    image
+                )
+            );
     }
 
     // compute the external_url field for a given token

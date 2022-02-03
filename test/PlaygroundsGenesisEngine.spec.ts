@@ -67,7 +67,7 @@ describe("ShellFactory", function () {
   };
 
   describe.only("PlaygroundsGenesisEngine", () => {
-    it("return correct name", async () => {
+    it("should return correct name", async () => {
       const resp = await testEngine.name();
       expect(resp).to.eq("playgrounds-genesis-v0");
     });
@@ -75,7 +75,17 @@ describe("ShellFactory", function () {
       const collection = await createCollection();
       await testEngine.mint(collection.address, "");
       const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
-      expect(metadata.name).to.contain("#1");
+      expect(metadata.name).to.match(/^Morph #1/);
+      expect(metadata.description).to.match(/mysterious scroll/);
+      console.log(metadata.image);
+    });
+    it("should have no issues minting first 100", async () => {
+      const collection = await createCollection();
+      await testEngine.mint(collection.address, "");
+      let count = 0;
+      while (++count < 100) {
+        await testEngine.mint(collection.address, "");
+      }
     });
   });
 });
