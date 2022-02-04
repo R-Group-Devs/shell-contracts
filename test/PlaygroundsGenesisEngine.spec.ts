@@ -93,5 +93,12 @@ describe("ShellFactory", function () {
         await testEngine.mint(collection.address, true);
       }
     });
+    it("should mint mythical variations when minting with flag", async () => {
+      const collection = await createCollection();
+      await testEngine.mint(collection.address, true);
+      const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
+      expect(metadata.name).to.match(/Mythical/);
+      expect(metadata.description).to.match(/mythical mark/);
+    });
   });
 });

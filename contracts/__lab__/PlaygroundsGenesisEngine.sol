@@ -86,15 +86,28 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         } else if (index == 4) {
             return "The Jade Prism";
         } else if (index == 5) {
-            return "Wandering";
+            return "Cosmic Understanding";
         }
 
         return "";
     }
 
-    function _computeName(IShellFramework, uint256 tokenId)
+    function getIsFlagged(IShellFramework collection, uint256 tokenId)
+        public
+        view
+        returns (bool)
+    {
+        return
+            collection.readTokenInt(
+                StorageLocation.MINT_DATA,
+                tokenId,
+                "isFlagged"
+            ) == 1;
+    }
+
+    function _computeName(IShellFramework collection, uint256 tokenId)
         internal
-        pure
+        view
         override
         returns (string memory)
     {
@@ -103,16 +116,18 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
                 abi.encodePacked(
                     "Morph #",
                     Strings.toString(tokenId),
-                    ": ",
+                    getIsFlagged(collection, tokenId)
+                        ? ": Mythical Scroll of "
+                        : ": Scroll of ",
                     getPaletteName(tokenId)
                 )
             );
     }
 
     // compute the metadata description for a given token
-    function _computeDescription(IShellFramework, uint256 tokenId)
+    function _computeDescription(IShellFramework collection, uint256 tokenId)
         internal
-        pure
+        view
         override
         returns (string memory)
     {
@@ -120,6 +135,9 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
             string(
                 abi.encodePacked(
                     "A mysterious scroll... you feel it pulsating with cosmic energy. What secrets might it hold?",
+                    getIsFlagged(collection, tokenId)
+                        ? "\\n\\nA mythical mark has been permanently etched into this NFT."
+                        : "",
                     "\\n\\nhttps://playgrounds.wtf"
                 )
             );
@@ -132,11 +150,7 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
-        bool isFlagged = collection.readTokenInt(
-            StorageLocation.MINT_DATA,
-            tokenId,
-            "isFlagged"
-        ) == 1;
+        bool isFlagged = getIsFlagged(collection, tokenId);
 
         string memory image = string(
             abi.encodePacked(
