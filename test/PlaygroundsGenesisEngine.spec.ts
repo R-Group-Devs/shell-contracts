@@ -66,25 +66,31 @@ describe("ShellFactory", function () {
     return collection;
   };
 
-  describe.only("PlaygroundsGenesisEngine", () => {
+  describe("PlaygroundsGenesisEngine", () => {
     it("should return correct name", async () => {
       const resp = await testEngine.name();
-      expect(resp).to.eq("playgrounds-genesis-v0");
+      expect(resp).to.eq("playgrounds-genesis-v0.1");
     });
-    it("should mint with no code", async () => {
+    it("should mint with no flag", async () => {
       const collection = await createCollection();
-      await testEngine.mint(collection.address, "");
+      await testEngine.mint(collection.address, false);
       const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
       expect(metadata.name).to.match(/^Morph #1/);
       expect(metadata.description).to.match(/mysterious scroll/);
-      console.log(metadata.image);
+    });
+    it("should mint with flag", async () => {
+      const collection = await createCollection();
+      await testEngine.mint(collection.address, true);
+      const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
+      expect(metadata.name).to.match(/^Morph #1/);
+      expect(metadata.description).to.match(/mysterious scroll/);
     });
     it("should have no issues minting first 100", async () => {
       const collection = await createCollection();
-      await testEngine.mint(collection.address, "");
+      await testEngine.mint(collection.address, false);
       let count = 0;
       while (++count < 100) {
-        await testEngine.mint(collection.address, "");
+        await testEngine.mint(collection.address, true);
       }
     });
   });
