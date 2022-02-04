@@ -69,7 +69,7 @@ describe("ShellFactory", function () {
   describe("PlaygroundsGenesisEngine", () => {
     it("should return correct name", async () => {
       const resp = await testEngine.name();
-      expect(resp).to.eq("playgrounds-genesis-v0.1");
+      expect(resp).to.eq("playgrounds-genesis-v0.2");
     });
     it("should mint with no flag", async () => {
       const collection = await createCollection();
