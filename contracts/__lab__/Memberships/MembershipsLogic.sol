@@ -24,15 +24,28 @@ contract MembershipsLogic {
     uint256 public constant BASE_POWER = 1000000;
     uint256 public constant EXPIRY = 365 days;
     uint256 public constant GRACE_PERIOD = 61 days;
-    // having punchDivisor number of inactive previous memberships = having one active membership
-    uint256 public constant PUNCH_DIVISOR = 8;
+    // having divisor number of inactive previous memberships = having one active membership
+    uint256 public constant DIVISOR = 8;
     string public constant EXTERNAL_URL = "https://heyshell.xyz";
 
     string private constant _BASE_POWER = "BASE_POWER";
     string private constant _EXPIRY = "EXPIRY";
     string private constant _GRACE_PERIOD = "GRACE_PERIOD";
-    string private constant _PUNCH_DIVISOR = "PUNCH_DIVISOR";
+    string private constant _DIVISOR = "DIVISOR";
     string private constant _EXTERNAL_URL = "BASE_POWER";
+
+    // ---
+    // Events
+    // ---
+
+    event SetOptions(
+        address indexed collection,
+        uint256 basePower,
+        uint256 expiry,
+        uint256 gracePeriod,
+        uint256 divisor,
+        string externalUrl
+    );
 
     // ---
     // External functions
@@ -50,9 +63,9 @@ contract MembershipsLogic {
         uint256 timestamp
     ) external view returns (uint256 power) {
         uint256 basePower = basePowerOf(collection);
-        // look through the address' punch card and add punchDivisor power for each past non-active membership
+        // look through the address' punch card and add divisor power for each past non-active membership
         uint256 punchCard = punchCardOf(collection, member);
-        uint256 punchPower = basePower / punchDivisorOf(collection);
+        uint256 punchPower = basePower / divisorOf(collection);
         if (punchCard != 0) {
             for (uint256 card = uint256(punchCard); card != 0; card >>= 8) {
                 power += punchPower;
@@ -68,67 +81,74 @@ contract MembershipsLogic {
         uint256 basePower_,
         uint256 expiry_,
         uint256 gracePeriod_,
-        uint256 punchDivisor_,
+        uint256 divisor_,
         string memory externalUrl_
     ) external collectionOwnerOnly(collection) {
         require(
             address(collection.getFork(0).engine) == address(this),
-            "Wrong default fork"
+            "Wrong engine"
         );
         require(basePower_ > 0, "basePower 0");
         require(expiry_ > 0, "expiry 0");
         require(gracePeriod_ > 0, "gracePeriod 0");
-        require(punchDivisor_ > 0, "punchDivisor 0");
-        require(bytes(externalUrl_).length > 0, "externalUrl empty");
+        require(divisor_ > 0, "divisor 0");
         require(gracePeriod_ < expiry_, "gracePeriod too big");
-        require(punchDivisor_ < type(uint8).max, "punchDivisor too big");
+        require(divisor_ < type(uint8).max, "divisor too big");
 
         uint256 basePower = basePowerOf(collection);
         uint256 expiry = expiryOf(collection);
         uint256 gracePeriod = gracePeriodOf(collection);
-        uint256 punchDivisor = punchDivisorOf(collection);
+        uint256 divisor = divisorOf(collection);
         string memory externalUrl = externalUrlOf(collection);
 
         if (basePower != basePower_) {
             collection.writeForkInt(
-                StorageLocation.ENGINE,
+                StorageLocation.FORK,
                 0,
                 _BASE_POWER,
                 basePower_
             );
         }
         if (expiry != expiry_) {
-            collection.writeForkInt(
-                StorageLocation.ENGINE,
-                0,
-                _EXPIRY,
-                expiry_
-            );
+            collection.writeForkInt(StorageLocation.FORK, 0, _EXPIRY, expiry_);
         }
+
+        // avoid stack-too-deep error
+        IShellFramework collectionCopy = collection;
+
         if (gracePeriod != gracePeriod_) {
             collection.writeForkInt(
-                StorageLocation.ENGINE,
+                StorageLocation.FORK,
                 0,
                 _GRACE_PERIOD,
                 gracePeriod_
             );
         }
-        if (punchDivisor != punchDivisor_) {
+        if (divisor != divisor_) {
             collection.writeForkInt(
-                StorageLocation.ENGINE,
+                StorageLocation.FORK,
                 0,
-                _PUNCH_DIVISOR,
-                punchDivisor_
+                _DIVISOR,
+                divisor_
             );
         }
         if (keccak256(bytes(externalUrl)) != keccak256(bytes(externalUrl_))) {
             collection.writeForkString(
-                StorageLocation.ENGINE,
+                StorageLocation.FORK,
                 0,
                 _EXTERNAL_URL,
                 externalUrl_
             );
         }
+
+        emit SetOptions(
+            address(collectionCopy),
+            basePowerOf(collectionCopy),
+            expiryOf(collectionCopy),
+            gracePeriodOf(collectionCopy),
+            divisorOf(collectionCopy),
+            externalUrlOf(collectionCopy)
+        );
     }
 
     function mint(IShellFramework collection, address to)
@@ -163,7 +183,7 @@ contract MembershipsLogic {
         returns (uint256 basePower)
     {
         basePower = collection.readForkInt(
-            StorageLocation.ENGINE,
+            StorageLocation.FORK,
             0,
             _BASE_POWER
         );
@@ -175,7 +195,7 @@ contract MembershipsLogic {
         view
         returns (uint256 expiry)
     {
-        expiry = collection.readForkInt(StorageLocation.ENGINE, 0, _EXPIRY);
+        expiry = collection.readForkInt(StorageLocation.FORK, 0, _EXPIRY);
         if (expiry == 0) expiry = EXPIRY;
     }
 
@@ -185,24 +205,20 @@ contract MembershipsLogic {
         returns (uint256 gracePeriod)
     {
         gracePeriod = collection.readForkInt(
-            StorageLocation.ENGINE,
+            StorageLocation.FORK,
             0,
             _GRACE_PERIOD
         );
         if (gracePeriod == 0) gracePeriod = GRACE_PERIOD;
     }
 
-    function punchDivisorOf(IShellFramework collection)
+    function divisorOf(IShellFramework collection)
         public
         view
-        returns (uint256 punchDivisor)
+        returns (uint256 divisor)
     {
-        punchDivisor = collection.readForkInt(
-            StorageLocation.ENGINE,
-            0,
-            _PUNCH_DIVISOR
-        );
-        if (punchDivisor == 0) punchDivisor = PUNCH_DIVISOR;
+        divisor = collection.readForkInt(StorageLocation.FORK, 0, _DIVISOR);
+        if (divisor == 0) divisor = DIVISOR;
     }
 
     function externalUrlOf(IShellFramework collection)
@@ -211,7 +227,7 @@ contract MembershipsLogic {
         returns (string memory externalUrl)
     {
         externalUrl = collection.readForkString(
-            StorageLocation.ENGINE,
+            StorageLocation.FORK,
             0,
             _EXTERNAL_URL
         );
@@ -353,15 +369,7 @@ contract MembershipsLogic {
         );
     }
 
-    function _daysPassed(uint256 timestamp)
-        public
-        pure
-        returns (uint256 daysPassed)
-    {
-        if (timestamp >= START) daysPassed = (timestamp - START) / 1 days; // days since Jan 1st, 2022 00:00:00
-    }
-
-    function _monthsSinceStart(uint256 timestamp) public pure returns (uint8) {
+    function _monthsSinceStart(uint256 timestamp) private pure returns (uint8) {
         uint256 daysPassed;
         if (timestamp >= START) daysPassed = (timestamp - START) / 1 days; // days since Jan 1st, 2022 00:00:00
         // daysPassed / 365 * 12 <-- in this order because we want to round down
@@ -371,7 +379,7 @@ contract MembershipsLogic {
         return uint8(m);
     }
 
-    function _month(uint256 day_) public pure returns (uint8) {
+    function _month(uint256 day_) private pure returns (uint8) {
         uint256 day = 31;
         if (day_ <= day) return 0; // Jan
         day += 28;
@@ -406,6 +414,10 @@ contract MembershipsLogic {
     {
         return string(abi.encodePacked("PUNCH_CARD", member));
     }
+
+    // ---
+    // Modifiers
+    // ---
 
     modifier collectionOwnerOnly(IShellFramework collection) {
         require(collection.owner() == msg.sender, "Collection owner only");

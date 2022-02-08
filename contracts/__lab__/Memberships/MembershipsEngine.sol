@@ -113,13 +113,15 @@ contract MembershipsEngine is
     function _computeName(IShellFramework collection, uint256 tokenId)
         private
         view
-        returns (string memory)
+        returns (string memory name_)
     {
         address owner = IShellERC721(address(collection)).ownerOf(tokenId);
         require(owner != address(0), "Nonexistent token");
         address[] memory addresses = new address[](1);
         addresses[0] = owner;
-        return reverseRecords.getNames(addresses)[0];
+        name_ = reverseRecords.getNames(addresses)[0];
+        if (bytes(name_).length == 0)
+            name_ = uint256(uint160(owner)).toHexString(20);
     }
 
     // compute the metadata description for a given token
