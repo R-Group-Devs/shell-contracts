@@ -136,7 +136,6 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         return
             string(
                 abi.encodePacked(
-                    Strings.toString(tokenId),
                     flag == 2
                         ? "A mysterious scroll... you feel it pulsating with cosmic energy. Its whispers speak secrets of cosmic significance."
                         : flag == 1
