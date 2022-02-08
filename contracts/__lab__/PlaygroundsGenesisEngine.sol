@@ -61,7 +61,7 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
             return string(abi.encodePacked("M00", Strings.toString(i + 1)));
         }
 
-        // common
+        // citizen
         uint256 index = uint256(keccak256(abi.encodePacked(tokenId))) % 10;
 
         if (index == 9) {
