@@ -7,19 +7,19 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
     function name() external pure returns (string memory) {
-        return "playgrounds-genesis-v0.2";
+        return "playgrounds-genesis-v0.3";
     }
 
-    function mint(IShellFramework collection, bool flag)
+    function mint(IShellFramework collection, uint256 flag)
         external
         returns (uint256)
     {
         IntStorage[] memory intData;
 
         // flag is written to token mint data if set
-        if (flag) {
+        if (flag != 0) {
             intData = new IntStorage[](1);
-            intData[0] = IntStorage({key: "isFlagged", value: flag ? 1 : 0});
+            intData[0] = IntStorage({key: "flag", value: flag});
         } else {
             intData = new IntStorage[](0);
         }
@@ -47,22 +47,25 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         return string(abi.encodePacked("P00", Strings.toString(index + 1)));
     }
 
-    function getVariation(uint256 tokenId, bool isFlagged)
+    function getVariation(uint256 tokenId, uint256 flag)
         public
         pure
         returns (string memory)
     {
-        // if flagged, pic one of the 5 rare variations
-        if (isFlagged) {
-            uint256 i = uint256(keccak256(abi.encodePacked(tokenId))) % 5;
-            return string(abi.encodePacked("R00", Strings.toString(i + 1)));
+        if (flag == 2) {
+            // celestial
+            return "X001";
+        } else if (flag == 1) {
+            // mythical
+            uint256 i = uint256(keccak256(abi.encodePacked(tokenId))) % 4;
+            return string(abi.encodePacked("M00", Strings.toString(i + 1)));
         }
 
-        uint256 index = uint256(keccak256(abi.encodePacked(tokenId))) % 15;
+        // common
+        uint256 index = uint256(keccak256(abi.encodePacked(tokenId))) % 10;
+
         if (index == 9) {
             return "C010"; // double digit case
-        } else if (index > 9) {
-            return string(abi.encodePacked("R00", Strings.toString(index - 9)));
         } else {
             return string(abi.encodePacked("C00", Strings.toString(index + 1)));
         }
@@ -92,17 +95,13 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         return "";
     }
 
-    function getIsFlagged(IShellFramework collection, uint256 tokenId)
+    function getFlag(IShellFramework collection, uint256 tokenId)
         public
         view
-        returns (bool)
+        returns (uint256)
     {
         return
-            collection.readTokenInt(
-                StorageLocation.MINT_DATA,
-                tokenId,
-                "isFlagged"
-            ) == 1;
+            collection.readTokenInt(StorageLocation.MINT_DATA, tokenId, "flag");
     }
 
     function _computeName(IShellFramework collection, uint256 tokenId)
@@ -111,12 +110,14 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
+        uint256 flag = getFlag(collection, tokenId);
+
         return
             string(
                 abi.encodePacked(
                     "Morph #",
                     Strings.toString(tokenId),
-                    getIsFlagged(collection, tokenId)
+                    flag == 2 ? ": Cosmic Scroll of " : flag == 1
                         ? ": Mythical Scroll of "
                         : ": Scroll of ",
                     getPaletteName(tokenId)
@@ -124,20 +125,23 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
             );
     }
 
-    // compute the metadata description for a given token
     function _computeDescription(IShellFramework collection, uint256 tokenId)
         internal
         view
         override
         returns (string memory)
     {
+        uint256 flag = getFlag(collection, tokenId);
+
         return
             string(
                 abi.encodePacked(
-                    "A mysterious scroll... you feel it pulsating with cosmic energy. What secrets might it hold?",
-                    getIsFlagged(collection, tokenId)
-                        ? "\\n\\nA mythical mark has been permanently etched into this NFT."
-                        : "",
+                    Strings.toString(tokenId),
+                    flag == 2
+                        ? "A mysterious scroll... you feel it pulsating with cosmic energy. Its whispers speak secrets of cosmic significance."
+                        : flag == 1
+                        ? "A mysterious scroll... you feel it pulsating with mythical energy. You sense its power is great."
+                        : "A mysterious scroll... you feel it pulsating with energy. What secrets might it hold?",
                     "\\n\\nhttps://playgrounds.wtf"
                 )
             );
@@ -150,28 +154,29 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
-        bool isFlagged = getIsFlagged(collection, tokenId);
+        uint256 flag = getFlag(collection, tokenId);
 
         string memory image = string(
             abi.encodePacked(
-                "E001-",
+                "S001-",
                 getPalette(tokenId),
                 "-",
-                getVariation(tokenId, isFlagged),
+                getVariation(tokenId, flag),
                 ".png"
             )
         );
+
         return
             string(
                 abi.encodePacked(
-                    "ipfs://ipfs/QmNr1uDyFvN3SBBw4NFBC9V7WZLrFzne2Q1xqnUbaS5WcJ/",
+                    "ipfs://ipfs/QmRCKXGuM47BzepjiHu2onshPFRWb7TMVEfd4K87cszg4w/",
                     image
                 )
             );
     }
 
     // compute the external_url field for a given token
-    function _computeExternalUrl(IShellFramework, uint256 tokenId)
+    function _computeExternalUrl(IShellFramework, uint256)
         internal
         pure
         override

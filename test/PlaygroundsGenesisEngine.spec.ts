@@ -69,36 +69,36 @@ describe("ShellFactory", function () {
   describe("PlaygroundsGenesisEngine", () => {
     it("should return correct name", async () => {
       const resp = await testEngine.name();
-      expect(resp).to.eq("playgrounds-genesis-v0.2");
+      expect(resp).to.eq("playgrounds-genesis-v0.3");
     });
     it("should mint with no flag", async () => {
       const collection = await createCollection();
-      await testEngine.mint(collection.address, false);
+      await testEngine.mint(collection.address, "0");
       const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
-      expect(metadata.name).to.match(/^Morph #1/);
-      expect(metadata.description).to.match(/mysterious scroll/);
+      expect(metadata.name).to.match(/^Morph #1: Scroll of/);
+      expect(metadata.description).to.match(/What secrets might it hold/);
     });
-    it("should mint with flag", async () => {
+    it("should mint with flag = 1", async () => {
       const collection = await createCollection();
-      await testEngine.mint(collection.address, true);
+      await testEngine.mint(collection.address, "1");
       const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
-      expect(metadata.name).to.match(/^Morph #1/);
-      expect(metadata.description).to.match(/mysterious scroll/);
+      expect(metadata.name).to.match(/^Morph #1: Mythical Scroll of/);
+      expect(metadata.description).to.match(/mythical energy/);
+    });
+    it("should mint with flag = 2", async () => {
+      const collection = await createCollection();
+      await testEngine.mint(collection.address, "2");
+      const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
+      expect(metadata.name).to.match(/^Morph #1: Cosmic Scroll of/);
+      expect(metadata.description).to.match(/cosmic energy/);
     });
     it("should have no issues minting first 100", async () => {
       const collection = await createCollection();
-      await testEngine.mint(collection.address, false);
+      await testEngine.mint(collection.address, "0");
       let count = 0;
       while (++count < 100) {
-        await testEngine.mint(collection.address, true);
+        await testEngine.mint(collection.address, "1");
       }
-    });
-    it("should mint mythical variations when minting with flag", async () => {
-      const collection = await createCollection();
-      await testEngine.mint(collection.address, true);
-      const metadata = metadataFromTokenURI(await collection.tokenURI("1"));
-      expect(metadata.name).to.match(/Mythical/);
-      expect(metadata.description).to.match(/mythical mark/);
     });
   });
 });
