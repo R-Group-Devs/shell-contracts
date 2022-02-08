@@ -35,12 +35,12 @@ contract MembershipsEngine is
     constructor(address reverseRecords_) {
         address[] memory addresses = new address[](1);
         addresses[0] = address(this);
+        reverseRecords = IReverseRecords(reverseRecords_);
         // check that reverseRecords has this function
         require(
             reverseRecords.getNames(addresses).length == 1,
             "Invalid reverseRecords"
         );
-        reverseRecords = IReverseRecords(reverseRecords_);
     }
 
     // ---
@@ -49,7 +49,7 @@ contract MembershipsEngine is
 
     // Get the name for this engine
     function name() external pure returns (string memory) {
-        return "Memberships";
+        return "memberships-engine-0.0.1";
     }
 
     // Disable new forks using this engine, as they will not work properly

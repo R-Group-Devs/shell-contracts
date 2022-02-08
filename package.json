@@ -12,7 +12,6 @@
     "build": "hardhat compile",
     "deploy": "hardhat deploy",
     "deploy:implementation": "hardhat deploy:implementation",
-    "deploy:squadz": "hardhat deploy:squadz",
     "register": "hardhat register",
     "verify": "hardhat verify"
   },
