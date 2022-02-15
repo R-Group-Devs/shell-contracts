@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
     function name() external pure returns (string memory) {
-        return "playgrounds-genesis-v0.3";
+        return "playgrounds-genesis-v0.4";
     }
 
     function mint(IShellFramework collection, uint256 flag)
