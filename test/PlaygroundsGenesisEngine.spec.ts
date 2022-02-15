@@ -59,7 +59,7 @@ describe("Playgrounds Denver drop", function () {
   describe("PlaygroundsGenesisEngine", () => {
     it("should return correct name", async () => {
       const resp = await testEngine.name();
-      expect(resp).to.eq("playgrounds-genesis-v0.5");
+      expect(resp).to.eq("playgrounds-genesis");
     });
     it("should mint with no flag", async () => {
       const collection = await createCollection();
