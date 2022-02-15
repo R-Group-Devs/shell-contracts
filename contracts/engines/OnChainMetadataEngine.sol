@@ -5,6 +5,11 @@ import "../libraries/Base64.sol";
 import "../IShellFramework.sol";
 import "../IEngine.sol";
 
+struct Attribute {
+    string key;
+    string value;
+}
+
 abstract contract OnChainMetadataEngine is IEngine {
     // Called by the collection to resolve a response for tokenURI
     function getTokenURI(IShellFramework collection, uint256 tokenId)
@@ -16,6 +21,24 @@ abstract contract OnChainMetadataEngine is IEngine {
         string memory description = _computeDescription(collection, tokenId);
         string memory image = _computeImageUri(collection, tokenId);
         string memory externalUrl = _computeExternalUrl(collection, tokenId);
+        Attribute[] memory attributes = _computeAttributes(collection, tokenId);
+
+        string memory attributesInnerJson = "";
+        for (uint256 i = 0; i < attributes.length; i++) {
+            attributesInnerJson = string(
+                bytes(
+                    abi.encodePacked(
+                        attributesInnerJson,
+                        i > 0 ? ", " : "",
+                        '{"trait_type": "',
+                        attributes[i].key,
+                        '", "value": "',
+                        attributes[i].value,
+                        '"}'
+                    )
+                )
+            );
+        }
 
         return
             string(
@@ -32,7 +55,9 @@ abstract contract OnChainMetadataEngine is IEngine {
                                 image,
                                 '", "external_url": "',
                                 externalUrl,
-                                '"}'
+                                '", "attributes": [',
+                                attributesInnerJson,
+                                "]}"
                             )
                         )
                     )
@@ -67,4 +92,10 @@ abstract contract OnChainMetadataEngine is IEngine {
         view
         virtual
         returns (string memory);
+
+    function _computeAttributes(IShellFramework collection, uint256 token)
+        internal
+        view
+        virtual
+        returns (Attribute[] memory);
 }
