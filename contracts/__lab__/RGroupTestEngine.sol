@@ -139,4 +139,13 @@ contract RGroupTestEngine is ShellBaseEngine, OnChainMetadataEngine {
     {
         return "https://twitter.com/raribledao";
     }
+
+    function _computeAttributes(IShellFramework collection, uint256 token)
+        internal
+        pure
+        override
+        returns (Attribute[] memory)
+    {
+        return new Attribute[](0);
+    }
 }

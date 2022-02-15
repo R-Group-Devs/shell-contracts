@@ -44,6 +44,7 @@ interface MaybeMetadata {
   description?: string;
   image?: string;
   external_url?: string;
+  attributes?: Array<{ trait_type: string; value: string }>;
 }
 
 export const metadataFromTokenURI = (tokenUri: string): MaybeMetadata => {

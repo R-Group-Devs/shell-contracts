@@ -1,25 +1,15 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { parseUnits } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import {
   ShellFactory,
   ShellERC721,
-  MockEngine,
   ShellERC721__factory,
   PlaygroundsGenesisEngine,
 } from "../typechain";
-import {
-  mintEntry,
-  mintOptions,
-  MINT_DATA_STORAGE,
-  FRAMEWORK_STORAGE,
-  FORK_STORAGE,
-  ENGINE_STORAGE,
-  metadataFromTokenURI,
-} from "./fixtures";
+import { metadataFromTokenURI } from "./fixtures";
 
-describe("ShellFactory", function () {
+describe("Playgrounds Denver drop", function () {
   // ---
   // fixtures
   // ---
@@ -69,7 +59,7 @@ describe("ShellFactory", function () {
   describe("PlaygroundsGenesisEngine", () => {
     it("should return correct name", async () => {
       const resp = await testEngine.name();
-      expect(resp).to.eq("playgrounds-genesis-v0.3");
+      expect(resp).to.eq("playgrounds-genesis-v0.5");
     });
     it("should mint with no flag", async () => {
       const collection = await createCollection();
@@ -98,7 +88,17 @@ describe("ShellFactory", function () {
       let count = 0;
       while (++count < 100) {
         await testEngine.mint(collection.address, "1");
+        const metadata = metadataFromTokenURI(
+          await collection.tokenURI(`${count}`)
+        );
+        expect(metadata.name).to.match(new RegExp(`Morph #${count}`));
       }
+    });
+    it("should expose minting end timestamp", async () => {
+      expect(await testEngine.MINTING_ENDS_AT_TIMESTAMP()).to.eq(1646114400);
+    });
+    it("should not allow minting after 3/1", async () => {
+      // TODO
     });
   });
 });

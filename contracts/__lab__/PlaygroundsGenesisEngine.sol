@@ -6,14 +6,24 @@ import "../engines/OnChainMetadataEngine.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
+    error MintingPeriodHasEnded();
+
+    // cant mint after midnight 3/1 CST
+    uint256 public constant MINTING_ENDS_AT_TIMESTAMP = 1646114400;
+
     function name() external pure returns (string memory) {
-        return "playgrounds-genesis-v0.4";
+        return "playgrounds-genesis";
     }
 
     function mint(IShellFramework collection, uint256 flag)
         external
         returns (uint256)
     {
+        // solhint-disable-next-line not-rely-on-time
+        if (block.timestamp >= MINTING_ENDS_AT_TIMESTAMP) {
+            revert MintingPeriodHasEnded();
+        }
+
         IntStorage[] memory intData;
 
         // flag is written to token mint data if set
@@ -52,8 +62,11 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         pure
         returns (string memory)
     {
-        if (flag == 2) {
+        if (flag >= 2) {
             // celestial
+            // doing >= 2 to let curious geeks mint things with custom flag
+            // values.
+            // I wonder if anybody will do this? 🤔
             return "X001";
         } else if (flag == 1) {
             // mythical
@@ -182,5 +195,20 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         returns (string memory)
     {
         return "https://playgrounds.wtf";
+    }
+
+    function _computeAttributes(IShellFramework collection, uint256 tokenId)
+        internal
+        view
+        override
+        returns (Attribute[] memory)
+    {
+        Attribute[] memory attributes = new Attribute[](2);
+        attributes[0] = Attribute({key: "Palette", value: getPalette(tokenId)});
+        attributes[1] = Attribute({
+            key: "Variation",
+            value: getVariation(tokenId, getFlag(collection, tokenId))
+        });
+        return attributes;
     }
 }
