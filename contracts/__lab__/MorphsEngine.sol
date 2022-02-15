@@ -194,7 +194,7 @@ contract MorphsEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
-        return "https://playgrounds.wtf";
+        return "https://morphs.wtf";
     }
 
     function _computeAttributes(IShellFramework collection, uint256 tokenId)
