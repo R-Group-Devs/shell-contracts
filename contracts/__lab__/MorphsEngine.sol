@@ -5,14 +5,14 @@ import "../engines/ShellBaseEngine.sol";
 import "../engines/OnChainMetadataEngine.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
+contract MorphsEngine is ShellBaseEngine, OnChainMetadataEngine {
     error MintingPeriodHasEnded();
 
     // cant mint after midnight 3/1 CST
     uint256 public constant MINTING_ENDS_AT_TIMESTAMP = 1646114400;
 
     function name() external pure returns (string memory) {
-        return "playgrounds-genesis";
+        return "morphs";
     }
 
     function mint(IShellFramework collection, uint256 flag)
@@ -149,9 +149,9 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         return
             string(
                 abi.encodePacked(
-                    flag == 2
+                    flag > 1
                         ? "A mysterious scroll... you feel it pulsating with cosmic energy. Its whispers speak secrets of cosmic significance."
-                        : flag == 1
+                        : flag > 0
                         ? "A mysterious scroll... you feel it pulsating with mythical energy. You sense its power is great."
                         : "A mysterious scroll... you feel it pulsating with energy. What secrets might it hold?",
                     "\\n\\nhttps://playgrounds.wtf"
@@ -203,11 +203,22 @@ contract PlaygroundsGenesisEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (Attribute[] memory)
     {
-        Attribute[] memory attributes = new Attribute[](2);
-        attributes[0] = Attribute({key: "Palette", value: getPalette(tokenId)});
+        Attribute[] memory attributes = new Attribute[](3);
+
+        attributes[0] = Attribute({
+            key: "Palette",
+            value: getPaletteName(tokenId)
+        });
+
         attributes[1] = Attribute({
             key: "Variation",
             value: getVariation(tokenId, getFlag(collection, tokenId))
+        });
+
+        uint256 flag = getFlag(collection, tokenId);
+        attributes[2] = Attribute({
+            key: "Affinity",
+            value: flag > 1 ? "Cosmic" : flag > 0 ? "Mythical" : "Citizen"
         });
         return attributes;
     }

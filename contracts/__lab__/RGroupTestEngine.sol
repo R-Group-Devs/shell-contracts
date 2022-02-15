@@ -137,15 +137,28 @@ contract RGroupTestEngine is ShellBaseEngine, OnChainMetadataEngine {
         override
         returns (string memory)
     {
-        return "https://twitter.com/raribledao";
+        return "https://rrrrr.group";
     }
 
-    function _computeAttributes(IShellFramework collection, uint256 token)
+    function _computeAttributes(IShellFramework collection, uint256 tokenId)
         internal
-        pure
+        view
         override
         returns (Attribute[] memory)
     {
-        return new Attribute[](0);
+        Attribute[] memory attributes = new Attribute[](2);
+        string memory name_ = collection.readTokenString(
+            StorageLocation.ENGINE,
+            tokenId,
+            "name"
+        );
+        uint256 timestamp = collection.readTokenInt(
+            StorageLocation.FRAMEWORK,
+            tokenId,
+            "timestamp"
+        );
+        attributes[0] = Attribute({key: "Name", value: name_});
+        attributes[1] = Attribute({key: "Joined", value: timestamp.toString()});
+        return attributes;
     }
 }

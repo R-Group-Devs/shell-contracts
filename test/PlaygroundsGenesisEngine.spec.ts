@@ -5,7 +5,7 @@ import {
   ShellFactory,
   ShellERC721,
   ShellERC721__factory,
-  PlaygroundsGenesisEngine,
+  MorphsEngine,
 } from "../typechain";
 import { metadataFromTokenURI } from "./fixtures";
 
@@ -18,19 +18,17 @@ describe("Playgrounds Denver drop", function () {
   let erc721: ShellERC721;
   let factory: ShellFactory;
   let accounts: SignerWithAddress[];
-  let testEngine: PlaygroundsGenesisEngine;
+  let testEngine: MorphsEngine;
   let a0: string, a1: string, a2: string, a3: string;
 
   beforeEach(async () => {
     ShellERC721 = await ethers.getContractFactory("ShellERC721");
     const ShellFactory = await ethers.getContractFactory("ShellFactory");
-    const PlaygroundsGenesisEngine = await ethers.getContractFactory(
-      "PlaygroundsGenesisEngine"
-    );
+    const MorphsEngine = await ethers.getContractFactory("MorphsEngine");
     [erc721, factory, testEngine, accounts] = await Promise.all([
       ShellERC721.deploy(),
       ShellFactory.deploy(),
-      PlaygroundsGenesisEngine.deploy(),
+      MorphsEngine.deploy(),
       ethers.getSigners(),
     ]);
     [a0, a1, a2, a3] = accounts.map((a) => a.address);
@@ -56,10 +54,10 @@ describe("Playgrounds Denver drop", function () {
     return collection;
   };
 
-  describe("PlaygroundsGenesisEngine", () => {
+  describe("MorphsEngine", () => {
     it("should return correct name", async () => {
       const resp = await testEngine.name();
-      expect(resp).to.eq("playgrounds-genesis");
+      expect(resp).to.eq("morphs");
     });
     it("should mint with no flag", async () => {
       const collection = await createCollection();
@@ -98,6 +96,15 @@ describe("Playgrounds Denver drop", function () {
       expect(await testEngine.MINTING_ENDS_AT_TIMESTAMP()).to.eq(1646114400);
     });
     it("should not allow minting after 3/1", async () => {
+      // TODO
+    });
+    it("should have variation in attributes", async () => {
+      // TODO
+    });
+    it("should have palette in attributes", async () => {
+      // TODO
+    });
+    it("should have affinity in attributes", async () => {
       // TODO
     });
   });
