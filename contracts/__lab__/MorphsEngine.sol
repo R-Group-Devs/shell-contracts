@@ -1,6 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/*
+
+            ░░░    ░░░  ░░░░░░  ░░░░░░  ░░░░░░  ░░   ░░ ░░░░░░░
+            ▒▒▒▒  ▒▒▒▒ ▒▒    ▒▒ ▒▒   ▒▒ ▒▒   ▒▒ ▒▒   ▒▒ ▒▒
+            ▒▒ ▒▒▒▒ ▒▒ ▒▒    ▒▒ ▒▒▒▒▒▒  ▒▒▒▒▒▒  ▒▒▒▒▒▒▒ ▒▒▒▒▒▒▒
+            ▓▓  ▓▓  ▓▓ ▓▓    ▓▓ ▓▓   ▓▓ ▓▓      ▓▓   ▓▓      ▓▓
+            ██      ██  ██████  ██   ██ ██      ██   ██ ███████
+
+                           https://morphs.wtf
+
+    Drifting through the immateria you find a scroll. You sense something
+    mysterious, cosmic.
+
+    You feel compelled to take it. After all, what have you got to lose...
+
+    Designed by @polyforms_
+
+    https://playgrounds.wtf
+    https://heyshell.xyz
+
+*/
+
 import "../engines/ShellBaseEngine.sol";
 import "../engines/OnChainMetadataEngine.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";

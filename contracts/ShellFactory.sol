@@ -1,6 +1,24 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/*
+                  ShellFactory V1
+
+        ███████╗██╗  ██╗███████╗██╗     ██╗
+        ██╔════╝██║  ██║██╔════╝██║     ██║
+        ███████╗███████║█████╗  ██║     ██║
+        ╚════██║██╔══██║██╔══╝  ██║     ██║
+        ███████║██║  ██║███████╗███████╗███████╗
+        ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝
+
+           An open product framework for NFTs
+            Dreamt up & built at Playgrounds
+
+               https://heyshell.xyz
+              https://playgrounds.wtf
+
+*/
+
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./libraries/Ownable.sol";
 import "./IShellFactory.sol";

@@ -1,6 +1,24 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/*
+           This NFT collection is powered by
+
+        ███████╗██╗  ██╗███████╗██╗     ██╗
+        ██╔════╝██║  ██║██╔════╝██║     ██║
+        ███████╗███████║█████╗  ██║     ██║
+        ╚════██║██╔══██║██╔══╝  ██║     ██║
+        ███████║██║  ██║███████╗███████╗███████╗
+        ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝
+
+           An open product framework for NFTs
+            Dreamt up & built at Playgrounds
+
+               https://heyshell.xyz
+              https://playgrounds.wtf
+
+*/
+
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "./ShellFramework.sol";
 
