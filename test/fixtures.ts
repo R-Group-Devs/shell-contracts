@@ -37,7 +37,6 @@ export const mintEntry = (
 export const ENGINE_STORAGE = 1;
 export const MINT_DATA_STORAGE = 2;
 export const FRAMEWORK_STORAGE = 3;
-export const FORK_STORAGE = 4;
 
 interface MaybeMetadata {
   name?: string;

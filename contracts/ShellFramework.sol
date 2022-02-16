@@ -281,7 +281,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         private
         view
     {
-        if (location == StorageLocation.FORK) {
+        if (location == StorageLocation.ENGINE) {
             if (msg.sender != address(getForkEngine(forkId))) {
                 revert SenderNotEngine();
             }
@@ -315,7 +315,9 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         string memory key,
         string memory value
     ) private {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
+        bytes32 storageKey = keccak256(
+            abi.encodePacked("fork", location, forkId, key)
+        );
         _stringStorage[storageKey] = value;
         emit ForkStringUpdated(location, forkId, key, value);
     }
@@ -326,7 +328,9 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         string memory key,
         uint256 value
     ) private {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
+        bytes32 storageKey = keccak256(
+            abi.encodePacked("fork", location, forkId, key)
+        );
         _intStorage[storageKey] = value;
         emit ForkIntUpdated(location, forkId, key, value);
     }
@@ -338,7 +342,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         string memory value
     ) private {
         bytes32 storageKey = keccak256(
-            abi.encodePacked(location, tokenId, key)
+            abi.encodePacked("token", location, tokenId, key)
         );
         _stringStorage[storageKey] = value;
         emit TokenStringUpdated(location, tokenId, key, value);
@@ -351,7 +355,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         uint256 value
     ) private {
         bytes32 storageKey = keccak256(
-            abi.encodePacked(location, tokenId, key)
+            abi.encodePacked("token", location, tokenId, key)
         );
         _intStorage[storageKey] = value;
         emit TokenIntUpdated(location, tokenId, key, value);
@@ -366,7 +370,9 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         uint256 forkId,
         string calldata key
     ) external view returns (string memory) {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
+        bytes32 storageKey = keccak256(
+            abi.encodePacked("fork", location, forkId, key)
+        );
         return _stringStorage[storageKey];
     }
 
@@ -375,7 +381,9 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         uint256 forkId,
         string calldata key
     ) external view returns (uint256) {
-        bytes32 storageKey = keccak256(abi.encodePacked(location, forkId, key));
+        bytes32 storageKey = keccak256(
+            abi.encodePacked("fork", location, forkId, key)
+        );
         return _intStorage[storageKey];
     }
 
@@ -385,7 +393,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         string calldata key
     ) external view returns (string memory) {
         bytes32 storageKey = keccak256(
-            abi.encodePacked(location, tokenId, key)
+            abi.encodePacked("token", location, tokenId, key)
         );
         return _stringStorage[storageKey];
     }
@@ -396,7 +404,7 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         string calldata key
     ) external view returns (uint256) {
         bytes32 storageKey = keccak256(
-            abi.encodePacked(location, tokenId, key)
+            abi.encodePacked("token", location, tokenId, key)
         );
         return _intStorage[storageKey];
     }

@@ -13,7 +13,6 @@ import {
   mintOptions,
   MINT_DATA_STORAGE,
   FRAMEWORK_STORAGE,
-  FORK_STORAGE,
   ENGINE_STORAGE,
 } from "./fixtures";
 
@@ -159,7 +158,7 @@ describe("ShellFactory", function () {
     it("should allow writing ints to fork storage from engine", async () => {
       const collection = await createCollection();
       await mockEngine.writeIntToFork(collection.address, 0, "foo", 123);
-      const value = await collection.readForkInt(FORK_STORAGE, 0, "foo");
+      const value = await collection.readForkInt(ENGINE_STORAGE, 0, "foo");
       expect(value).to.equal(123);
     });
     it("should allow writing ints to token from engine", async () => {
@@ -168,6 +167,28 @@ describe("ShellFactory", function () {
       await mockEngine.writeIntToToken(collection.address, "1", "foo", 123);
       const value = await collection.readTokenInt(ENGINE_STORAGE, "1", "foo");
       expect(value).to.equal(123);
+    });
+    it("should allow writing strings to fork storage from engine", async () => {
+      const collection = await createCollection();
+      await mockEngine.writeStringToFork(collection.address, 0, "foo", "hey");
+      const value = await collection.readForkString(ENGINE_STORAGE, 0, "foo");
+      expect(value).to.equal("hey");
+    });
+    it("should allow writing strings to token from engine", async () => {
+      const collection = await createCollection();
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.writeStringToToken(
+        collection.address,
+        "1",
+        "foo",
+        "hey"
+      );
+      const value = await collection.readTokenString(
+        ENGINE_STORAGE,
+        "1",
+        "foo"
+      );
+      expect(value).to.equal("hey");
     });
   });
   describe("implementations", () => {

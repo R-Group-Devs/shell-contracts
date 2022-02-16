@@ -14,9 +14,7 @@ enum StorageLocation {
     // set by the engine during minting, immutable
     MINT_DATA,
     // set by the framework during minting or collection creation, immutable
-    FRAMEWORK,
-    // set by the engine at any time, siloed to a specific fork
-    FORK
+    FRAMEWORK
 }
 
 // string key / value

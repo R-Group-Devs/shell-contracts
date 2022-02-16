@@ -50,7 +50,32 @@ contract MockEngine is ShellBaseEngine {
         string calldata key,
         uint256 value
     ) external {
-        collection.writeForkInt(StorageLocation.FORK, forkId, key, value);
+        collection.writeForkInt(StorageLocation.ENGINE, forkId, key, value);
+    }
+
+    // pass thru write
+    function writeStringToToken(
+        IShellFramework collection,
+        uint256 tokenId,
+        string calldata key,
+        string calldata value
+    ) external {
+        collection.writeTokenString(
+            StorageLocation.ENGINE,
+            tokenId,
+            key,
+            value
+        );
+    }
+
+    // pass thru write
+    function writeStringToFork(
+        IShellFramework collection,
+        uint256 forkId,
+        string calldata key,
+        string calldata value
+    ) external {
+        collection.writeForkString(StorageLocation.ENGINE, forkId, key, value);
     }
 
     // mint pass thru
