@@ -97,17 +97,14 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
         if (msg.sender != address(getForkEngine(0))) {
             revert SenderNotEngine();
         }
-
-        return _mint(entry);
-    }
-
-    function _mint(MintEntry calldata entry) internal returns (uint256) {
         if (entry.amount != 1) {
             revert InvalidMintAmount();
         }
+
         uint256 tokenId = nextTokenId++;
         _mint(entry.to, tokenId);
         _writeMintData(tokenId, entry);
+
         return tokenId;
     }
 
