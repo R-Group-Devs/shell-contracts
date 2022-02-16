@@ -7,6 +7,7 @@ import {
   ShellERC721,
   MockEngine,
   ShellERC721__factory,
+  MockEngine__factory,
 } from "../typechain";
 import {
   mintEntry,
@@ -22,6 +23,7 @@ describe("ShellFactory", function () {
   // ---
 
   let ShellERC721: ShellERC721__factory;
+  let MockEngine: MockEngine__factory;
   let erc721: ShellERC721;
   let factory: ShellFactory;
   let mockEngine: MockEngine;
@@ -31,7 +33,7 @@ describe("ShellFactory", function () {
   beforeEach(async () => {
     ShellERC721 = await ethers.getContractFactory("ShellERC721");
     const ShellFactory = await ethers.getContractFactory("ShellFactory");
-    const MockEngine = await ethers.getContractFactory("MockEngine");
+    MockEngine = await ethers.getContractFactory("MockEngine");
     [erc721, factory, mockEngine, accounts] = await Promise.all([
       ShellERC721.deploy(),
       ShellFactory.deploy(),
@@ -155,12 +157,40 @@ describe("ShellFactory", function () {
     });
   });
   describe("fork storage", () => {
+    it("should revert when fork writing to an invalid location", async () => {
+      const collection = await createCollection();
+      await expect(
+        mockEngine.invalidForkWrite(collection.address, 0)
+      ).to.have.revertedWith("WriteNotAllowed()");
+    });
+    it("should revert when token writing to an invalid location", async () => {
+      const collection = await createCollection();
+      await expect(
+        mockEngine.invalidTokenWrite(collection.address, 1)
+      ).to.have.revertedWith("WriteNotAllowed()");
+    });
+    it("should revert when non-engine attempts fork write", async () => {
+      const collection = await createCollection();
+      const otherEngine = await MockEngine.deploy();
+      await expect(
+        otherEngine.writeIntToFork(collection.address, 0, "foo", 123)
+      ).to.have.revertedWith("SenderNotEngine()");
+    });
+    it("should revert when non-engine attempts token write", async () => {
+      const collection = await createCollection();
+      await mockEngine.mint(collection.address, "Qhash"); // token 1
+      const otherEngine = await MockEngine.deploy();
+      await expect(
+        otherEngine.writeIntToToken(collection.address, "1", "foo", 123)
+      ).to.have.revertedWith("SenderNotEngine()");
+    });
     it("should allow writing ints to fork storage from engine", async () => {
       const collection = await createCollection();
       await mockEngine.writeIntToFork(collection.address, 0, "foo", 123);
       const value = await collection.readForkInt(ENGINE_STORAGE, 0, "foo");
       expect(value).to.equal(123);
     });
+
     it("should allow writing ints to token from engine", async () => {
       const collection = await createCollection();
       await mockEngine.mint(collection.address, "Qhash");

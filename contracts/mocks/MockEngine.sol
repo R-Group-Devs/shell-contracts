@@ -78,6 +78,28 @@ contract MockEngine is ShellBaseEngine {
         collection.writeForkString(StorageLocation.ENGINE, forkId, key, value);
     }
 
+    function invalidForkWrite(IShellFramework collection, uint256 forkId)
+        external
+    {
+        collection.writeForkString(
+            StorageLocation.MINT_DATA,
+            forkId,
+            "foo",
+            "bar"
+        );
+    }
+
+    function invalidTokenWrite(IShellFramework collection, uint256 tokenId)
+        external
+    {
+        collection.writeTokenString(
+            StorageLocation.MINT_DATA,
+            tokenId,
+            "foo",
+            "bar"
+        );
+    }
+
     // mint pass thru
     function mintPassthrough(
         IShellFramework collection,
