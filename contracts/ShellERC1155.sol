@@ -41,27 +41,6 @@ contract ShellERC1155 is ShellFramework, ERC1155Upgradeable {
             revert SenderNotEngine();
         }
 
-        return _mint(entry);
-    }
-
-    function batchMint(MintEntry[] calldata entries)
-        external
-        returns (uint256[] memory)
-    {
-        if (msg.sender != address(getForkEngine(0))) {
-            revert SenderNotEngine();
-        }
-
-        uint256[] memory tokenIds = new uint256[](entries.length);
-
-        for (uint256 i = 0; i < entries.length; i++) {
-            tokenIds[i] = _mint(entries[i]);
-        }
-
-        return tokenIds;
-    }
-
-    function _mint(MintEntry calldata entry) internal returns (uint256) {
         uint256 tokenId = nextTokenId++;
         _mint(entry.to, tokenId, entry.amount, "");
         _writeMintData(tokenId, entry);
