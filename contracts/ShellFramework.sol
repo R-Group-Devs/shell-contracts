@@ -161,6 +161,10 @@ abstract contract ShellFramework is IShellFramework, Initializable {
         return _forks[forkId].engine;
     }
 
+    function getForkOwner(uint256 forkId) public view returns (address) {
+        return _forks[forkId].owner;
+    }
+
     function getTokenForkId(uint256 tokenId) public view returns (uint256) {
         return _tokenForks[tokenId];
     }

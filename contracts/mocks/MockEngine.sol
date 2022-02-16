@@ -108,6 +108,23 @@ contract MockEngine is ShellBaseEngine {
         return collection.mint(entry);
     }
 
+    function mintMultiple(IShellFramework collection, uint256 amount) external {
+        collection.mint(
+            MintEntry({
+                to: msg.sender,
+                amount: amount,
+                options: MintOptions({
+                    storeEngine: false,
+                    storeMintedTo: false,
+                    storeTimestamp: false,
+                    storeBlockNumber: false,
+                    stringData: new StringStorage[](0),
+                    intData: new IntStorage[](0)
+                })
+            })
+        );
+    }
+
     // store ipfs in mint data
     function mint(IShellFramework collection, string calldata ipfsHash)
         external

@@ -190,8 +190,11 @@ interface IShellFramework is IERC165, IERC2981 {
     // Get information about a fork
     function getFork(uint256 forkId) external view returns (Fork memory);
 
-    // Get the collection / canonical engine. getFork(0).engine
+    // Get a fork's engine
     function getForkEngine(uint256 forkId) external view returns (IEngine);
+
+    // Get a fork's owner
+    function getForkOwner(uint256 forkId) external view returns (address);
 
     // Get a token's fork ID
     function getTokenForkId(uint256 tokenId) external view returns (uint256);
@@ -211,11 +214,6 @@ interface IShellFramework is IERC165, IERC2981 {
 
     // mint new tokens. Only callable by collection engine
     function mint(MintEntry calldata entry) external returns (uint256);
-
-    // mint new tokens. Only callable by collection engine
-    function batchMint(MintEntry[] calldata entries)
-        external
-        returns (uint256[] memory);
 
     // ---
     // Storage writes

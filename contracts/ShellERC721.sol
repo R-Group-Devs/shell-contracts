@@ -101,25 +101,10 @@ contract ShellERC721 is ShellFramework, ERC721Upgradeable {
         return _mint(entry);
     }
 
-    function batchMint(MintEntry[] calldata entries)
-        external
-        returns (uint256[] memory)
-    {
-        if (msg.sender != address(getForkEngine(0))) {
-            revert SenderNotEngine();
-        }
-
-        uint256[] memory tokenIds = new uint256[](entries.length);
-
-        for (uint256 i = 0; i < entries.length; i++) {
-            tokenIds[i] = _mint(entries[i]);
-        }
-
-        return tokenIds;
-    }
-
     function _mint(MintEntry calldata entry) internal returns (uint256) {
-        require(entry.amount == 1, "shell: amount must be 1");
+        if (entry.amount != 1) {
+            revert InvalidMintAmount();
+        }
         uint256 tokenId = nextTokenId++;
         _mint(entry.to, tokenId);
         _writeMintData(tokenId, entry);

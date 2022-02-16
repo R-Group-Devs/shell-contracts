@@ -240,5 +240,123 @@ describe("ShellFactory", function () {
       await mockEngine.mint(collection.address, "hash");
       expect(await collection.uri("1")).to.match(/hash/);
     });
+    it("erc721: should revert if attempting to mint from non canonical engine", async () => {
+      const collection = await createCollection();
+      expect(
+        collection.mint({
+          to: a0,
+          amount: 1,
+          options: {
+            intData: [],
+            stringData: [],
+            storeBlockNumber: false,
+            storeEngine: false,
+            storeMintedTo: false,
+            storeTimestamp: false,
+          },
+        })
+      ).to.have.revertedWith("SenderNotEngine()");
+    });
+    it("erc721: should revert if attempting to mint multiple", async () => {
+      const collection = await createCollection();
+      expect(
+        mockEngine.mintMultiple(collection.address, 10)
+      ).to.have.revertedWith("InvalidMintAmount()");
+    });
+  });
+  describe("fork management", () => {
+    it("should revert if creating a fork with an invalid engine", async () => {
+      const collection = await createCollection();
+      await expect(
+        collection.createFork(collection.address, a0, [])
+      ).to.have.revertedWith("InvalidEngine()");
+    });
+    it("should revert if setting fork engine to invalid engine", async () => {
+      const collection = await createCollection();
+      await expect(
+        collection.setForkEngine("0", collection.address)
+      ).to.have.revertedWith("InvalidEngine()");
+    });
+    it("should revert if changing fork owner as non-owner", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      await collection.createFork(engine2.address, a1, []);
+      await expect(collection.setForkOwner("1", a0)).to.have.revertedWith(
+        "SenderNotForkOwner()"
+      );
+      await collection.connect(accounts[1]).setForkOwner("1", a0); // no revert
+    });
+    it("should revert if changing fork engine as non-owner", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      await collection.createFork(engine2.address, a1, []);
+      await expect(
+        collection.setForkEngine("1", mockEngine.address)
+      ).to.have.revertedWith("SenderNotForkOwner()");
+      await collection
+        .connect(accounts[1])
+        .setForkEngine("1", mockEngine.address); // no revert
+    });
+    it("should revert if attempting to fork a non-owned token", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      await mockEngine.mint(collection.address, "Qhash");
+      await collection.transferFrom(a0, a1, "1");
+      await expect(
+        collection.createFork(engine2.address, a1, ["1"])
+      ).to.have.revertedWith("SenderCannotFork()");
+      const collection1 = collection.connect(accounts[1]);
+      await collection1.createFork(engine2.address, a1, ["1"]); // no throw
+    });
+    it("should create forks with auto incrementing ids", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      const engine3 = await MockEngine.deploy();
+      await collection.createFork(engine2.address, a1, []);
+      await collection.createFork(engine3.address, a2, []);
+      expect(await collection.getForkEngine(0)).to.equal(mockEngine.address);
+      expect(await collection.getForkEngine(1)).to.equal(engine2.address);
+      expect(await collection.getForkEngine(2)).to.equal(engine3.address);
+      expect((await collection.getFork(0)).owner).to.equal(a0);
+      expect((await collection.getFork(1)).owner).to.equal(a1);
+      expect((await collection.getFork(2)).owner).to.equal(a2);
+    });
+    it("should allow forking tokens during fork creation", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.mint(collection.address, "Qhash");
+      await collection.createFork(engine2.address, a0, ["2", "3"]);
+      expect(await collection.getTokenEngine("1")).to.equal(mockEngine.address);
+      expect(await collection.getTokenEngine("2")).to.equal(engine2.address);
+      expect(await collection.getTokenEngine("3")).to.equal(engine2.address);
+      expect(await collection.getTokenForkId("1")).to.equal("0");
+      expect(await collection.getTokenForkId("2")).to.equal("1");
+      expect(await collection.getTokenForkId("3")).to.equal("1");
+    });
+    it("should allow nft owner to batch set token fork", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      await collection.createFork(engine2.address, a1, []);
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.mint(collection.address, "Qhash");
+      await collection.setTokenForks(["2", "3"], "1");
+      expect(await collection.getTokenForkId("1")).to.equal("0");
+      expect(await collection.getTokenForkId("2")).to.equal("1");
+      expect(await collection.getTokenForkId("3")).to.equal("1");
+    });
+    it("should revert if non nft owner attempts to batch set token fork", async () => {
+      const collection = await createCollection();
+      const engine2 = await MockEngine.deploy();
+      await collection.createFork(engine2.address, a1, []);
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.mint(collection.address, "Qhash");
+      await mockEngine.mint(collection.address, "Qhash");
+      await expect(
+        collection.connect(accounts[1]).setTokenForks(["2", "3"], "1")
+      ).to.have.revertedWith("SenderCannotFork()");
+    });
   });
 });
