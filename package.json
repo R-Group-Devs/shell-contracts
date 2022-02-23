@@ -2,6 +2,9 @@
   "name": "@r-group/shell-contracts",
   "version": "1.0.0-rc3",
   "private": false,
+  "files": [
+    "/contracts/**/*.sol"
+  ],
   "engines": {
     "node": ">=14.0.0"
   },
