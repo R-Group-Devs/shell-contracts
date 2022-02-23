@@ -1,5 +1,5 @@
 {
-  "name": "shell-contracts",
+  "name": "@r-group/shell-contracts",
   "version": "1.0.0-rc1",
   "private": true,
   "engines": {
