@@ -3,7 +3,8 @@
   "version": "1.0.0-rc4",
   "private": false,
   "files": [
-    "/contracts/**/*.sol"
+    "/contracts/**/*.sol",
+    "/typechain/**/*"
   ],
   "engines": {
     "node": ">=14.0.0"
