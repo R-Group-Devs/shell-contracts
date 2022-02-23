@@ -1,6 +1,6 @@
 {
   "name": "@r-group/shell-contracts",
-  "version": "1.0.0-rc5",
+  "version": "1.0.0",
   "private": false,
   "files": [
     "/contracts/**/*.sol",
