@@ -83,3 +83,28 @@ If you are verifying for the `fantom` network, set the `FANTOM` env var:
 ```
 FANTOM=1 yarn verify --network fantom $CONTRACT_ADDRESS
 ```
+
+## Publishing
+
+This repo is published to npm so it can be installed as a dependency to downstream smart contract repos (such as engines).
+
+Create a new version:
+
+```
+npm version 1.1.0
+```
+
+Make sure build artifacts are recent:
+
+```
+yarn clean && yarn build
+```
+
+Publish:
+
+```
+npm publish
+```
+
+
+
