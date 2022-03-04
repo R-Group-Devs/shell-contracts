@@ -64,6 +64,12 @@ yarn deploy:implementation --network rinkeby --contract ShellERC721 --implementa
 
 This will deploy and verify the contract, as well as call the register method on the factory. This won't work if factory ownership has been transferred to a non-dev wallet.
 
+To register an existing deployment:
+
+```
+yarn register --network rinkeby --address 0x123..123 --implementation erc721-prototype
+```
+
 ### Verification
 
 The `deploy` task will automatically verify contracts generally.
