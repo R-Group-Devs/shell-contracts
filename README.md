@@ -54,6 +54,16 @@ This will output the deployed contract address in the console and update the `./
 
 > NOTE: The contract will automatically be verified on etherscan
 
+### Deploying Implementations
+
+To deploy a token model / implementation and register it with the corresponding shell factory:
+
+```
+yarn deploy:implementation --network rinkeby --contract ShellERC721 --implementation erc721-v1
+```
+
+This will deploy and verify the contract, as well as call the register method on the factory. This won't work if factory ownership has been transferred to a non-dev wallet.
+
 ### Verification
 
 The `deploy` task will automatically verify contracts generally.
