@@ -11,6 +11,8 @@ struct Attribute {
 }
 
 abstract contract OnChainMetadataEngine is IEngine {
+    /* solhint-disable quotes */
+
     // Called by the collection to resolve a response for tokenURI
     function getTokenURI(IShellFramework collection, uint256 tokenId)
         external

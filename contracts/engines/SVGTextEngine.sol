@@ -20,6 +20,8 @@ struct TextConfig {
 abstract contract SVGTextEngine is SVGImageEngine {
     using Strings for uint256;
 
+    /* solhint-disable quotes */
+
     /// @notice should return a complete <svg> document
     function _computeSVGDocument(IShellFramework collection, uint256 tokenId)
         internal
