@@ -10,5 +10,8 @@
   },
   "mumbai": {
     "address": "0x76e9f19D76Ae534cFb754AFE9D9CC52395E5fFaF"
+  },
+  "polygon": {
+    "address": "0x03741151f5E6CF9736455C0CBCD512bfA8529C93"
   }
 }
