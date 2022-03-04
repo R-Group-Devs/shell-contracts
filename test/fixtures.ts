@@ -46,6 +46,14 @@ interface MaybeMetadata {
   attributes?: Array<{ trait_type: string; value: string }>;
 }
 
+export const svgFromImageData = (image?: string): string => {
+  const [prefix, encoded] = (image ?? "").split(",");
+  if (prefix !== "data:image/svg+xml;base64") {
+    throw new Error("invalid svg image data");
+  }
+  return Buffer.from(encoded, "base64").toString();
+};
+
 export const metadataFromTokenURI = (tokenUri: string): MaybeMetadata => {
   const [prefix, encoded] = tokenUri.split(",");
   if (prefix !== "data:application/json;base64") {
