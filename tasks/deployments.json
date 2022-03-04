@@ -4,5 +4,8 @@
   },
   "eth": {
     "address": "0x57FBF9E899E17E23d46425e33eE191C8FaD27c28"
+  },
+  "goerli": {
+    "address": "0x0Ff2BC06b7faF18f1AD0C3086DDb26738A532351"
   }
 }
