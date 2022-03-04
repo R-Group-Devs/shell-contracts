@@ -7,5 +7,8 @@
   },
   "goerli": {
     "address": "0x0Ff2BC06b7faF18f1AD0C3086DDb26738A532351"
+  },
+  "mumbai": {
+    "address": "0x76e9f19D76Ae534cFb754AFE9D9CC52395E5fFaF"
   }
 }
